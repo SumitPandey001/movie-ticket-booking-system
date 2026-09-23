@@ -9,6 +9,10 @@ import com.sumit.movieticketbookingsystem.show.internal.persistence.ShowReposito
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional(readOnly = true)
 class ShowFacade implements ShowApi {
@@ -21,7 +25,15 @@ class ShowFacade implements ShowApi {
 
     @Override
     public ShowDetails show(long showId) {
-        Show show = shows.findById(showId).orElseThrow(() -> new NotFoundException("Show", showId));
+        return details(shows.findById(showId).orElseThrow(() -> new NotFoundException("Show", showId)));
+    }
+
+    @Override
+    public Map<Long, ShowDetails> shows(Collection<Long> showIds) {
+        return shows.findAllById(showIds).stream().collect(Collectors.toMap(Show::getId, ShowFacade::details));
+    }
+
+    private static ShowDetails details(Show show) {
         return new ShowDetails(show.getId(), show.getMovieId(), show.getTheaterId(), show.getCityId(),
                 show.getLayoutId(), show.getShowDate(), show.getStartTime(), show.getStatus() == ShowStatus.OPEN,
                 show.getRefundPolicyId());

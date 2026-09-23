@@ -36,7 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Holding seats, letting them go, changing the coupon on a hold, and looking up a customer's booking. A hold is one
+ * Holding seats, letting them go and changing the coupon on a hold. A hold is one
  * transaction across inventory, pricing and booking, so it either happens completely or not at all.
  */
 @Service
@@ -131,11 +131,6 @@ public class HoldService {
         inventory.releaseHeld(booking.getShowId(), booking.getId());
         coupons.release(booking.getId());
         return booking;
-    }
-
-    @Transactional(readOnly = true)
-    public Booking booking(UUID bookingId, UUID userId) {
-        return bookings.findOwn(bookingId, userId);
     }
 
     /**

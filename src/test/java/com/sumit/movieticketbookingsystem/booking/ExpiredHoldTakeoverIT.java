@@ -84,7 +84,8 @@ class ExpiredHoldTakeoverIT {
         clock.advance(PAST_THE_HOLD);
         Booking second = holdService.createHold(new CreateHold(customer, show.id(), show.seats("B2"), null));
 
-        assertThat(holdService.booking(first.getId(), customer).getStatus()).isEqualTo(BookingStatus.EXPIRED);
+        assertThat(jdbc.sql("SELECT status FROM booking WHERE id = ?").param(first.getId()).query(String.class)
+                .single()).isEqualTo("EXPIRED");
         assertThat(second.getStatus()).isEqualTo(BookingStatus.HELD);
         assertThat(jdbc.sql("SELECT status FROM show_seat WHERE show_id = ? AND layout_seat_id = ?")
                 .params(show.id(), show.seatIdsByLabel().get("B1")).query(String.class).single())

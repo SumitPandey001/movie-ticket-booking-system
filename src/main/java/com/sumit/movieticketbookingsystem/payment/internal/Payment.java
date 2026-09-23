@@ -103,6 +103,10 @@ class Payment {
         return reference;
     }
 
+    String getMaskedDetails() {
+        return maskedDetails;
+    }
+
     PaymentStatus getStatus() {
         return status;
     }

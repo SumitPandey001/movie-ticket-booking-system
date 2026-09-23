@@ -73,6 +73,10 @@ class Refund {
         return bookingId;
     }
 
+    UUID getCancellationId() {
+        return cancellationId;
+    }
+
     long getAmountPaise() {
         return amountPaise;
     }
