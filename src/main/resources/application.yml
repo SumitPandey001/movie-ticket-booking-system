@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: movie-ticket-booking-system
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/moviebooking
+    username: moviebooking
+    password: moviebooking
