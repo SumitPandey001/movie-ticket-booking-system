@@ -15,11 +15,15 @@ public final class TestBookingProperties {
     }
 
     public static BookingProperties defaults() {
-        return new BookingProperties(Duration.ofMinutes(20), LocalTime.of(3, 0), Duration.ofMinutes(10), 7, 20,
-                Map.of("MORNING", new Slot(LocalTime.of(3, 0), LocalTime.of(12, 0)),
-                        "AFTERNOON", new Slot(LocalTime.of(12, 0), LocalTime.of(16, 0)),
-                        "EVENING", new Slot(LocalTime.of(16, 0), LocalTime.of(20, 0)),
-                        "NIGHT", new Slot(LocalTime.of(20, 0), LocalTime.of(3, 0))),
-                new BookingProperties.Cache(Duration.ofSeconds(60), Duration.ofMinutes(10)));
+        return withSlots(Map.of("MORNING", new Slot(LocalTime.of(3, 0), LocalTime.of(12, 0)),
+                "AFTERNOON", new Slot(LocalTime.of(12, 0), LocalTime.of(16, 0)),
+                "EVENING", new Slot(LocalTime.of(16, 0), LocalTime.of(20, 0)),
+                "NIGHT", new Slot(LocalTime.of(20, 0), LocalTime.of(3, 0))));
+    }
+
+    public static BookingProperties withSlots(Map<String, Slot> slots) {
+        return new BookingProperties(Duration.ofMinutes(20), LocalTime.of(3, 0), Duration.ofMinutes(10), 7, 20, slots,
+                new BookingProperties.Cache(Duration.ofSeconds(60), Duration.ofMinutes(10)),
+                Duration.ofMinutes(8), 10, 2000, 18);
     }
 }

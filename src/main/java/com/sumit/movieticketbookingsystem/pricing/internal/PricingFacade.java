@@ -1,10 +1,13 @@
 package com.sumit.movieticketbookingsystem.pricing.internal;
 
+import com.sumit.movieticketbookingsystem.pricing.PriceQuote;
 import com.sumit.movieticketbookingsystem.pricing.PricingApi;
+import com.sumit.movieticketbookingsystem.pricing.SeatToPrice;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,10 +17,12 @@ class PricingFacade implements PricingApi {
 
     private final PriceRepository prices;
     private final SeatCategories categories;
+    private final PriceCalculator calculator;
 
-    PricingFacade(PriceRepository prices, SeatCategories categories) {
+    PricingFacade(PriceRepository prices, SeatCategories categories, PriceCalculator calculator) {
         this.prices = prices;
         this.categories = categories;
+        this.calculator = calculator;
     }
 
     @Override
@@ -56,5 +61,11 @@ class PricingFacade implements PricingApi {
     @Transactional(readOnly = true)
     public Map<Long, Long> showPrices(long showId) {
         return prices.showPrices(showId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PriceQuote quote(long showId, List<SeatToPrice> seats) {
+        return calculator.quote(showId, seats);
     }
 }

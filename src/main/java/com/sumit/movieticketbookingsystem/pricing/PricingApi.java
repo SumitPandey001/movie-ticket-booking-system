@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.pricing;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,4 +26,7 @@ public interface PricingApi {
 
     /** The show's price per seat category, by category id. */
     Map<Long, Long> showPrices(long showId);
+
+    /** Prices the given seats of the show: tier price, convenience fee and GST, one line per seat. */
+    PriceQuote quote(long showId, List<SeatToPrice> seats);
 }
