@@ -52,13 +52,17 @@ public class Show extends AuditedEntity {
 
     private Long priceFromPaise;
 
+    private Long refundPolicyId;
+
     @Version
     private long version;
 
     protected Show() {
     }
 
-    public Show(Placement placement, long movieId, Timing timing, String language, String format, int totalSeats) {
+    /** @param refundPolicyId null to use whatever the default policy is when a booking is confirmed */
+    public Show(Placement placement, long movieId, Timing timing, String language, String format, int totalSeats,
+            Long refundPolicyId) {
         this.movieId = movieId;
         this.screenId = placement.screenId();
         this.theaterId = placement.theaterId();
@@ -71,6 +75,7 @@ public class Show extends AuditedEntity {
         this.language = language;
         this.format = format;
         this.totalSeats = totalSeats;
+        this.refundPolicyId = refundPolicyId;
         this.status = ShowStatus.SCHEDULED;
     }
 
@@ -145,6 +150,10 @@ public class Show extends AuditedEntity {
 
     public int getTotalSeats() {
         return totalSeats;
+    }
+
+    public Long getRefundPolicyId() {
+        return refundPolicyId;
     }
 
     public Long getPriceFromPaise() {

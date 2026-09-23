@@ -1,0 +1,1 @@
+Refund of [(${amount})] for booking [(${bookingRef})] initiated. It should reach you in 5-7 working days.

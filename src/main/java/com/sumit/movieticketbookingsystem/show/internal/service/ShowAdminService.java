@@ -57,9 +57,10 @@ public class ShowAdminService {
     /**
      * @param showDate       optional; defaults to the late-night rule in {@link ShowDateResolver}
      * @param priceOverrides price in paise by category code, replacing the theater's default for this show
+     * @param refundPolicyId optional; the default policy applies when it's null
      */
     public record CreateShow(long movieId, long screenId, Instant start, String language, String format,
-                             LocalDate showDate, Map<String, Long> priceOverrides) {
+                             LocalDate showDate, Map<String, Long> priceOverrides, Long refundPolicyId) {
     }
 
     @Transactional
@@ -89,18 +90,22 @@ public class ShowAdminService {
         LayoutView layout = catalog.layout(screen.activeLayoutId());
 
         Show show = new Show(placement, movie.movieId(), timing, normalize(command.language()),
-                normalize(command.format()), layout.totalSeats());
+                normalize(command.format()), layout.totalSeats(), command.refundPolicyId());
         try {
             shows.saveAndFlush(show);
         } catch (DataIntegrityViolationException e) {
             if (ConstraintViolations.isViolationOf(e, "show_no_overlap")) {
                 throw new ShowOverlapException(screen.screenId());
             }
+            if (ConstraintViolations.isViolationOf(e, "show_refund_policy_id_fkey")) {
+                throw new NotFoundException("Refund policy", command.refundPolicyId());
+            }
             throw e;
         }
         inventory.initializeSeats(show.getId(), layout);
         Set<Long> categoryIds = layout.seats().stream().map(LayoutView.Seat::categoryId).collect(Collectors.toSet());
-        show.updatePriceFrom(pricing.initializeShowPrices(ShowPricings.of(show), categoryIds, command.priceOverrides()));
+        show.updatePriceFrom(
+                pricing.initializeShowPrices(ShowPricings.of(show), categoryIds, command.priceOverrides()));
         return show;
     }
 

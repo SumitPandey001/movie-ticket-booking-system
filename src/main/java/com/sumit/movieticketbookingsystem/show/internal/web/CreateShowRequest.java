@@ -12,6 +12,7 @@ import java.util.Map;
 /**
  * {@code startTime} carries its offset, e.g. {@code 2026-10-03T18:15:00+05:30}. {@code showDate} is optional.
  * {@code priceOverrides} is optional too: price in paise by category code, replacing the theater's default.
+ * {@code refundPolicyId} is optional; without it the default refund policy applies.
  */
 record CreateShowRequest(
         @NotNull Long movieId,
@@ -20,7 +21,8 @@ record CreateShowRequest(
         @NotBlank @Size(max = 10) String language,
         @NotBlank @Size(max = 10) String format,
         LocalDate showDate,
-        Map<@NotBlank String, @NotNull @Positive Long> priceOverrides) {
+        Map<@NotBlank String, @NotNull @Positive Long> priceOverrides,
+        Long refundPolicyId) {
 
     Map<String, Long> priceOverridesOrEmpty() {
         return priceOverrides == null ? Map.of() : priceOverrides;

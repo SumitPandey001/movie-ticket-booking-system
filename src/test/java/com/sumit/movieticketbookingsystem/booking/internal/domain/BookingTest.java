@@ -1,5 +1,7 @@
 package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
+import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicySnapshot;
+import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicyType;
 import com.sumit.movieticketbookingsystem.shared.error.IllegalTransitionException;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +23,8 @@ class BookingTest {
             new BookingSeat(12, "F8", 1, 20000, 0, 2360, 25960),
             new BookingSeat(11, "F7", 1, 20000, 0, 2360, 25960));
     private static final PriceTotals TOTALS = new PriceTotals(40000, 0, 4000, 7920, 51920);
+    private static final RefundPolicySnapshot POLICY =
+            new RefundPolicySnapshot(1, "Standard", RefundPolicyType.FULL, false, List.of());
 
     @Test
     void holdStartsHeldWithFrozenPrices() {
@@ -81,9 +85,10 @@ class BookingTest {
     void paymentEndsConfirmedOrFailed() {
         Booking paid = hold();
         paid.startPayment(NOW, Duration.ofMinutes(5));
-        paid.confirm(NOW.plusSeconds(30));
+        paid.confirm(POLICY, NOW.plusSeconds(30));
         assertThat(paid.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
         assertThat(paid.getConfirmedAt()).isEqualTo(NOW.plusSeconds(30));
+        assertThat(paid.getRefundPolicySnapshot()).isEqualTo(POLICY);
 
         Booking declined = hold();
         declined.startPayment(NOW, Duration.ofMinutes(5));
@@ -91,7 +96,8 @@ class BookingTest {
         assertThat(declined.getStatus()).isEqualTo(BookingStatus.FAILED);
         assertThat(declined.getClosedAt()).isEqualTo(NOW.plusSeconds(30));
 
-        assertThatThrownBy(() -> hold().confirm(NOW)).isInstanceOf(IllegalTransitionException.class);   // not paid
+        assertThatThrownBy(() -> hold().confirm(POLICY, NOW))                     // not paid
+                .isInstanceOf(IllegalTransitionException.class);
     }
 
     @Test

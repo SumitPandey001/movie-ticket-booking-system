@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
+import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicySnapshot;
 import com.sumit.movieticketbookingsystem.shared.error.InvalidStateException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
@@ -9,6 +10,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -55,6 +58,9 @@ public class Booking {
     private long totalPaise;
 
     private String couponCode;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    private RefundPolicySnapshot refundPolicySnapshot;
 
     @ElementCollection
     @CollectionTable(name = "booking_seat", joinColumns = @JoinColumn(name = "booking_id"))
@@ -127,8 +133,10 @@ public class Booking {
         }
     }
 
-    public void confirm(Instant now) {
+    /** @param refundPolicy the terms this booking is sold under; kept even if the policy is edited later */
+    public void confirm(RefundPolicySnapshot refundPolicy, Instant now) {
         status = status.transitionTo(BookingStatus.CONFIRMED);
+        refundPolicySnapshot = refundPolicy;
         confirmedAt = now;
     }
 
@@ -215,6 +223,10 @@ public class Booking {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public RefundPolicySnapshot getRefundPolicySnapshot() {
+        return refundPolicySnapshot;
     }
 
     public Instant getConfirmedAt() {
