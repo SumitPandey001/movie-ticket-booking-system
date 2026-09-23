@@ -2,8 +2,10 @@ package com.sumit.movieticketbookingsystem.show.internal.service;
 
 import com.sumit.movieticketbookingsystem.catalog.CatalogApi;
 import com.sumit.movieticketbookingsystem.catalog.CitySummary;
+import com.sumit.movieticketbookingsystem.catalog.LayoutView;
 import com.sumit.movieticketbookingsystem.catalog.MovieInfo;
 import com.sumit.movieticketbookingsystem.catalog.ScreenInfo;
+import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
@@ -20,20 +22,23 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class ShowAdminService {
 
     private final ShowRepository shows;
     private final CatalogApi catalog;
+    private final InventoryApi inventory;
     private final ShowDateResolver showDateResolver;
     private final Duration cleaningBuffer;
     private final Clock clock;
 
-    ShowAdminService(ShowRepository shows, CatalogApi catalog, ShowDateResolver showDateResolver,
-            BookingProperties properties, Clock clock) {
+    ShowAdminService(ShowRepository shows, CatalogApi catalog, InventoryApi inventory,
+            ShowDateResolver showDateResolver, BookingProperties properties, Clock clock) {
         this.shows = shows;
         this.catalog = catalog;
+        this.inventory = inventory;
         this.showDateResolver = showDateResolver;
         this.cleaningBuffer = properties.cleaningBuffer();
         this.clock = clock;
@@ -70,18 +75,20 @@ public class ShowAdminService {
                 command.start(), end, end.plus(cleaningBuffer));
         Show.Placement placement = new Show.Placement(
                 screen.screenId(), screen.theaterId(), screen.cityId(), screen.activeLayoutId());
-        int totalSeats = catalog.layout(screen.activeLayoutId()).totalSeats();
+        LayoutView layout = catalog.layout(screen.activeLayoutId());
 
         Show show = new Show(placement, movie.movieId(), timing, normalize(command.language()),
-                normalize(command.format()), totalSeats);
+                normalize(command.format()), layout.totalSeats());
         try {
-            return shows.saveAndFlush(show);
+            shows.saveAndFlush(show);
         } catch (DataIntegrityViolationException e) {
             if (ConstraintViolations.isViolationOf(e, "show_no_overlap")) {
                 throw new ShowOverlapException(screen.screenId());
             }
             throw e;
         }
+        inventory.initializeSeats(show.getId(), layout);
+        return show;
     }
 
     @Transactional(readOnly = true)
@@ -101,6 +108,18 @@ public class ShowAdminService {
         Show show = find(showId);
         show.cancel();
         return show;
+    }
+
+    /** @return the seats that couldn't be blocked: not available right now, or not part of the show */
+    @Transactional
+    public Set<Long> blockSeats(long showId, Set<Long> seatIds) {
+        return inventory.block(find(showId).getId(), seatIds);
+    }
+
+    /** @return the seats that weren't blocked */
+    @Transactional
+    public Set<Long> unblockSeats(long showId, Set<Long> seatIds) {
+        return inventory.unblock(find(showId).getId(), seatIds);
     }
 
     private Show find(long showId) {

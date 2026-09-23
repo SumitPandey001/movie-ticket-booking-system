@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/admin/shows")
@@ -46,5 +47,19 @@ class ShowAdminController {
     @PostMapping("/{id}/cancel")
     ShowResponse cancel(@PathVariable long id) {
         return ShowResponse.from(showService.cancel(id));
+    }
+
+    @PostMapping("/{id}/seats/block")
+    SeatChangeResponse blockSeats(@PathVariable long id, @Valid @RequestBody SeatIdsRequest request) {
+        return new SeatChangeResponse(showService.blockSeats(id, request.seatIds()));
+    }
+
+    @PostMapping("/{id}/seats/unblock")
+    SeatChangeResponse unblockSeats(@PathVariable long id, @Valid @RequestBody SeatIdsRequest request) {
+        return new SeatChangeResponse(showService.unblockSeats(id, request.seatIds()));
+    }
+
+    /** Seats left as they were, e.g. blocking a seat that's already blocked. Empty means every seat changed. */
+    record SeatChangeResponse(Set<Long> unchangedSeatIds) {
     }
 }
