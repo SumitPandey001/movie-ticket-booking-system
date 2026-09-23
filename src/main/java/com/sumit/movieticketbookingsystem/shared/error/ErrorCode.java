@@ -12,6 +12,7 @@ public enum ErrorCode {
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Unauthenticated"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "Forbidden"),
     NOT_FOUND(HttpStatus.NOT_FOUND, "Not found"),
+    ALREADY_EXISTS(HttpStatus.CONFLICT, "Already exists"),
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid state"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
 
