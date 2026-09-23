@@ -15,6 +15,16 @@ spring:
     hibernate:
       ddl-auto: validate
 
+logging:
+  level:
+    # Hibernate warns on every constraint violation, including the ones we turn into 409s on purpose
+    # (show overlap ...). Real failures are still logged by GlobalExceptionHandler.
+    org.hibernate.orm.jdbc.error: error
+
+booking:
+  cleaning-buffer: PT20M
+  late-night-cutoff: "03:00"
+
 ---
 spring:
   config:
