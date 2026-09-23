@@ -16,6 +16,7 @@ import com.sumit.movieticketbookingsystem.payment.RefundRequest;
 import com.sumit.movieticketbookingsystem.payment.SimulatedOutcome;
 import com.sumit.movieticketbookingsystem.pricing.CouponApi;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
+import com.sumit.movieticketbookingsystem.show.ShowApi;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -28,7 +29,8 @@ import java.util.stream.Collectors;
 /**
  * Paying for a hold. Deliberately not one transaction: start the payment (tx1), call the gateway with no
  * transaction open so no locks are held while it works, then confirm or fail the booking (tx2). If the payment
- * succeeds after the seats were lost, the booking is closed and the payment refunded instead (tx3).
+ * succeeds after the seats were lost or the show was cancelled, the booking is closed and the payment refunded
+ * instead (tx3).
  */
 @Service
 public class CheckoutService {
@@ -37,6 +39,7 @@ public class CheckoutService {
     private final PaymentApi payments;
     private final InventoryApi inventory;
     private final CouponApi coupons;
+    private final ShowApi shows;
     private final RefundPolicyService refundPolicies;
     private final BookingEvents events;
     private final TransactionTemplate tx;
@@ -44,12 +47,13 @@ public class CheckoutService {
     private final Clock clock;
 
     CheckoutService(BookingRepository bookings, PaymentApi payments, InventoryApi inventory, CouponApi coupons,
-            RefundPolicyService refundPolicies, BookingEvents events, TransactionTemplate tx,
+            ShowApi shows, RefundPolicyService refundPolicies, BookingEvents events, TransactionTemplate tx,
             BookingProperties properties, Clock clock) {
         this.bookings = bookings;
         this.payments = payments;
         this.inventory = inventory;
         this.coupons = coupons;
+        this.shows = shows;
         this.refundPolicies = refundPolicies;
         this.events = events;
         this.tx = tx;
@@ -99,19 +103,29 @@ public class CheckoutService {
         if (booking.isHoldExpired(now)) {
             throw new HoldExpiredException(bookingId);
         }
+        if (!shows.show(booking.getShowId()).open()) {
+            throw new ShowNotBookableException(booking.getShowId());   // cancelled since the seats were held
+        }
         booking.startPayment(now, paymentWindow);
         return payments.initiate(new InitiatePayment(bookingId, userId, booking.getBookingRef(),
                 booking.getTotals().total(), details));
     }
 
-    /** @return the confirmed booking, or null if it can no longer be confirmed (so the payment must go back) */
+    /**
+     * @return the confirmed booking, or null if it can no longer be confirmed (so the payment must go back).
+     * The row is locked before the show is checked, so a show cancellation either sees this booking confirmed
+     * and refunds it, or this sees the show cancelled.
+     */
     private Booking confirm(UUID bookingId) {
-        Booking booking = bookings.findById(bookingId).orElseThrow();
+        Booking booking = bookings.findByIdForUpdate(bookingId).orElseThrow();
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             return booking;                                        // the same payment reported twice
         }
         if (booking.getStatus() != BookingStatus.PAYMENT_PENDING) {
             return null;                                           // already expired while the payment was pending
+        }
+        if (!shows.show(booking.getShowId()).open()) {
+            return null;                                           // the show was cancelled while it was pending
         }
         Instant now = Instant.now(clock);
         inventory.confirm(booking.getShowId(),
