@@ -10,6 +10,7 @@ import com.sumit.movieticketbookingsystem.catalog.internal.domain.LayoutStatus;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Movie;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Screen;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.SeatLayout;
+import com.sumit.movieticketbookingsystem.catalog.internal.domain.SeatType;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Theater;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.CityRepository;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.MovieRepository;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -52,7 +54,11 @@ class CatalogFacade implements CatalogApi {
     @Override
     public LayoutView layout(long layoutId) {
         SeatLayout layout = layouts.findById(layoutId).orElseThrow(() -> new NotFoundException("Seat layout", layoutId));
-        return new LayoutView(layout.getId(), layout.getScreenId(), layout.getTotalSeats());
+        List<LayoutView.Seat> seats = layout.getSeats().stream()
+                .map(seat -> new LayoutView.Seat(seat.getId(), seat.getLabel(), seat.getCategory().getId(),
+                        seat.getSeatType() == SeatType.BLOCKED))
+                .toList();
+        return new LayoutView(layout.getId(), layout.getScreenId(), layout.getTotalSeats(), seats);
     }
 
     @Override
