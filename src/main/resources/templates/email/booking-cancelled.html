@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body style="font-family: Arial, sans-serif; color: #222;">
+<p>Hi <span th:text="${name} ?: 'there'">Asha</span>,</p>
+<p th:if="${fullyCancelled}">Your booking <strong th:text="${bookingRef}">BK000001</strong> for
+    <span th:text="${movieTitle}">Movie</span> has been cancelled.</p>
+<p th:unless="${fullyCancelled}">We've cancelled seats <strong th:text="${seats}">F7</strong> of booking
+    <strong th:text="${bookingRef}">BK000001</strong> for <span th:text="${movieTitle}">Movie</span>.
+    Your other seats are still booked.</p>
+<p th:if="${refund != ''}">A refund of <strong th:text="${refund}">₹259.60</strong> is on its way; we'll email
+    you when it's done.</p>
+<p th:if="${refund == ''}">Under the cancellation policy for this booking, no refund is due.</p>
+</body>
+</html>

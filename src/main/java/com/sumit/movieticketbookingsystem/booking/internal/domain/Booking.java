@@ -1,7 +1,10 @@
 package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
+import com.sumit.movieticketbookingsystem.booking.CancellationReason;
 import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicySnapshot;
 import com.sumit.movieticketbookingsystem.shared.error.InvalidStateException;
+import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -9,12 +12,15 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Version;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +71,11 @@ public class Booking {
     @ElementCollection
     @CollectionTable(name = "booking_seat", joinColumns = @JoinColumn(name = "booking_id"))
     private Set<BookingSeat> seats = new HashSet<>();
+
+    @OneToMany(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "booking_id", nullable = false, updatable = false)
+    @OrderBy("createdAt")
+    private List<Cancellation> cancellations = new ArrayList<>();
 
     // A wrapper type on purpose: null tells Spring Data the booking is new despite its assigned id,
     // so save() inserts instead of selecting first.
@@ -155,6 +166,51 @@ public class Booking {
         close(BookingStatus.EXPIRED, now);
     }
 
+    /**
+     * What cancelling the seats now would refund, without cancelling anything.
+     *
+     * @param seatIds active seats of this booking; empty means all of them
+     */
+    public RefundQuote refundQuote(Set<Long> seatIds, RefundRule rule, Instant now) {
+        if (status != BookingStatus.CONFIRMED) {
+            throw new InvalidStateException("Only a confirmed booking can be cancelled; this one is " + status);
+        }
+        return rule.quote(seatsToCancel(seatIds), Duration.between(now, showStartTime));
+    }
+
+    /**
+     * Gives the seats back. The booking stays CONFIRMED while any seat is still active, and is CANCELLED once
+     * none are. Refund, inventory and coupon are the caller's job; this only records what was cancelled.
+     */
+    public Cancellation cancel(Set<Long> seatIds, RefundRule rule, CancellationReason reason, Instant now) {
+        RefundQuote quote = refundQuote(seatIds, rule, now);
+        Cancellation cancellation = new Cancellation(UUID.randomUUID(), reason, quote.seats().size(), quote, now);
+        cancellations.add(cancellation);
+        for (BookingSeat seat : quote.seats()) {
+            seats.remove(seat);
+            seats.add(seat.cancelledBy(cancellation.getId()));
+        }
+        if (seats.stream().noneMatch(BookingSeat::isActive)) {
+            close(BookingStatus.CANCELLED, now);
+        }
+        return cancellation;
+    }
+
+    private List<BookingSeat> seatsToCancel(Set<Long> seatIds) {
+        List<BookingSeat> active = getSeats().stream().filter(BookingSeat::isActive).toList();
+        if (seatIds.isEmpty()) {
+            return active;
+        }
+        for (long seatId : seatIds) {
+            BookingSeat seat = seats.stream().filter(s -> s.layoutSeatId() == seatId).findFirst()
+                    .orElseThrow(() -> new ValidationException("Seat " + seatId + " isn't part of this booking"));
+            if (!seat.isActive()) {
+                throw new InvalidStateException("Seat " + seat.seatLabel() + " is already cancelled");
+            }
+        }
+        return active.stream().filter(seat -> seatIds.contains(seat.layoutSeatId())).toList();
+    }
+
     public boolean isHoldExpired(Instant now) {
         return status == BookingStatus.HELD && !now.isBefore(holdExpiresAt);
     }
@@ -219,6 +275,10 @@ public class Booking {
     /** Seats in label order (A1, A2, B1 ...). */
     public List<BookingSeat> getSeats() {
         return seats.stream().sorted(Comparator.comparing(BookingSeat::seatLabel)).toList();
+    }
+
+    public List<Cancellation> getCancellations() {
+        return List.copyOf(cancellations);
     }
 
     public Instant getCreatedAt() {

@@ -3,9 +3,11 @@ package com.sumit.movieticketbookingsystem.notification;
 import com.jayway.jsonpath.JsonPath;
 import com.sumit.movieticketbookingsystem.Eventually;
 import com.sumit.movieticketbookingsystem.TestcontainersConfiguration;
+import com.sumit.movieticketbookingsystem.booking.BookingCancelled;
 import com.sumit.movieticketbookingsystem.booking.BookingConfirmed;
 import com.sumit.movieticketbookingsystem.booking.BookingFixtures;
 import com.sumit.movieticketbookingsystem.booking.BookingFixtures.BookableShow;
+import com.sumit.movieticketbookingsystem.booking.CancellationReason;
 import com.sumit.movieticketbookingsystem.payment.RefundCompleted;
 import com.sumit.movieticketbookingsystem.payment.RefundReason;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,6 +128,23 @@ class NotificationIT {
         assertThat(JsonPath.<String>read(message, "$.Subject")).isEqualTo("Your refund for BK9LATE01 is on its way");
         assertThat(JsonPath.<String>read(message, "$.Text"))
                 .contains("came through after the seats had", "₹519.20");
+    }
+
+    @Test
+    void aPartialCancellationSaysWhichSeatsWentAndWhatComesBack() {
+        knownUser();
+
+        UUID bookingId = UUID.randomUUID();
+        publish(new BookingCancelled(bookingId, "BK9CANC01", customer, UUID.randomUUID(),
+                CancellationReason.CUSTOMER, "Dune", List.of("A1"), 23600, false));
+
+        Eventually.until("the cancellation email", WAIT, () -> emailsTo(email) == 1);
+        String message = latestEmailTo(email);
+        assertThat(JsonPath.<String>read(message, "$.Subject")).isEqualTo("Booking BK9CANC01 cancelled");
+        assertThat(JsonPath.<String>read(message, "$.Text"))
+                .contains("seats *A1* of booking", "other seats are still booked", "*₹236* is on its way")   // bold
+                .doesNotContain("no refund is due");
+        Eventually.until("the SMS", WAIT, () -> sentChannels(bookingId).size() == 2);
     }
 
     private MockHttpServletRequestBuilder asAsha(MockHttpServletRequestBuilder request) {

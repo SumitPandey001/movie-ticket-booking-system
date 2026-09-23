@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.booking.internal.web;
 
+import com.sumit.movieticketbookingsystem.booking.internal.service.CancellationService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.CheckoutService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService.CreateHold;
@@ -8,6 +9,7 @@ import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
 import com.sumit.movieticketbookingsystem.shared.user.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +20,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -29,10 +33,13 @@ class BookingController {
 
     private final HoldService holdService;
     private final CheckoutService checkoutService;
+    private final CancellationService cancellationService;
 
-    BookingController(HoldService holdService, CheckoutService checkoutService) {
+    BookingController(HoldService holdService, CheckoutService checkoutService,
+            CancellationService cancellationService) {
         this.holdService = holdService;
         this.checkoutService = checkoutService;
+        this.cancellationService = cancellationService;
     }
 
     /** Holds seats; the response's holdExpiresAt drives the countdown in the client. */
@@ -73,8 +80,30 @@ class BookingController {
         return BookingResponse.from(holdService.release(id, user.id()));
     }
 
+    /** What cancelling now would refund. Without {@code seatIds}, every active seat. */
+    @GetMapping("/{id}/refund-quote")
+    RefundQuoteResponse refundQuote(@PathVariable UUID id, @RequestParam(required = false) Set<Long> seatIds,
+            CurrentUser user) {
+        return RefundQuoteResponse.from(cancellationService.quote(id, user.id(), orEmpty(seatIds)));
+    }
+
+    @PostMapping("/{id}/cancellations")
+    @Idempotent
+    CancellationResponse cancel(@PathVariable UUID id, @Valid @RequestBody CancelRequest request,
+            CurrentUser user) {
+        return CancellationResponse.from(cancellationService.cancel(id, user.id(), orEmpty(request.seatIds())));
+    }
+
+    /** {@code seatIds} optional; leave it out to cancel every seat that's still active. */
+    record CancelRequest(Set<@NotNull Long> seatIds) {
+    }
+
     @GetMapping("/{id}")
     BookingResponse booking(@PathVariable UUID id, CurrentUser user) {
         return BookingResponse.from(holdService.booking(id, user.id()));
+    }
+
+    private static Set<Long> orEmpty(Set<Long> seatIds) {
+        return seatIds == null ? Set.of() : seatIds;
     }
 }

@@ -40,6 +40,13 @@ public interface InventoryApi {
      */
     void confirm(long showId, Set<Long> seatIds, UUID bookingId, Instant now);
 
+    /**
+     * Frees seats the booking has paid for, when they're cancelled. All or nothing.
+     *
+     * @throws IllegalStateException if any of the seats isn't booked by this booking
+     */
+    void releaseBooked(long showId, Set<Long> seatIds, UUID bookingId);
+
     /** Frees the seats the booking still holds (release, expiry, failed payment); returns how many. */
     int releaseHeld(long showId, UUID bookingId);
 

@@ -79,6 +79,16 @@ class InventoryFacade implements InventoryApi {
     }
 
     @Override
+    public void releaseBooked(long showId, Set<Long> seatIds, UUID bookingId) {
+        int released = seats.releaseBooked(showId, seatIds, bookingId);
+        if (released != seatIds.size()) {
+            throw new IllegalStateException(
+                    "Only " + released + " of " + seatIds.size() + " seats are booked by " + bookingId);
+        }
+        availabilityChanged(showId, released);
+    }
+
+    @Override
     public int releaseHeld(long showId, UUID bookingId) {
         int released = seats.releaseHeld(showId, bookingId);
         availabilityChanged(showId, released);

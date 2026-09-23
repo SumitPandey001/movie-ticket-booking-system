@@ -1,8 +1,11 @@
 package com.sumit.movieticketbookingsystem.booking.internal.service;
 
+import com.sumit.movieticketbookingsystem.booking.BookingCancelled;
 import com.sumit.movieticketbookingsystem.booking.BookingConfirmed;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingSeat;
+import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
+import com.sumit.movieticketbookingsystem.booking.internal.domain.Cancellation;
 import com.sumit.movieticketbookingsystem.catalog.CatalogApi;
 import com.sumit.movieticketbookingsystem.show.ShowApi;
 import com.sumit.movieticketbookingsystem.show.ShowDetails;
@@ -35,6 +38,17 @@ class BookingEvents {
                 catalog.city(show.cityId()).zone(),
                 booking.getSeats().stream().map(BookingSeat::seatLabel).toList(),
                 booking.getTotals().total()));
+    }
+
+    void cancelled(Booking booking, Cancellation cancellation) {
+        ShowDetails show = shows.show(booking.getShowId());
+        List<String> seatLabels = booking.getSeats().stream()
+                .filter(seat -> cancellation.getId().equals(seat.cancellationId()))
+                .map(BookingSeat::seatLabel)
+                .toList();
+        events.publishEvent(new BookingCancelled(booking.getId(), booking.getBookingRef(), booking.getUserId(),
+                cancellation.getId(), cancellation.getReason(), catalog.movie(show.movieId()).title(), seatLabels,
+                cancellation.getRefundPaise(), booking.getStatus() == BookingStatus.CANCELLED));
     }
 
     private String theaterName(long theaterId) {

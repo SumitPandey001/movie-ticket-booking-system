@@ -1,13 +1,17 @@
 package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
+import com.sumit.movieticketbookingsystem.booking.CancellationReason;
 import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicySnapshot;
 import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicyType;
 import com.sumit.movieticketbookingsystem.shared.error.IllegalTransitionException;
+import com.sumit.movieticketbookingsystem.shared.error.InvalidStateException;
+import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +27,7 @@ class BookingTest {
             new BookingSeat(12, "F8", 1, 20000, 0, 2360, 25960),
             new BookingSeat(11, "F7", 1, 20000, 0, 2360, 25960));
     private static final PriceTotals TOTALS = new PriceTotals(40000, 0, 4000, 7920, 51920);
+    private static final RefundRule FULL_REFUND = (seats, beforeShow) -> RefundRule.refund(seats, 100, true);
     private static final RefundPolicySnapshot POLICY =
             new RefundPolicySnapshot(1, "Standard", RefundPolicyType.FULL, false, List.of());
 
@@ -108,6 +113,45 @@ class BookingTest {
         assertThat(booking.isHoldExpired(EXPIRES)).isTrue();
         booking.release(NOW);
         assertThat(booking.isHoldExpired(EXPIRES)).isFalse();     // only a live hold can expire
+    }
+
+    @Test
+    void cancellingSomeSeatsKeepsTheBookingConfirmed() {
+        Booking booking = confirmed();
+
+        Cancellation first = booking.cancel(Set.of(12L), FULL_REFUND, CancellationReason.CUSTOMER, NOW);
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(first.getSeatCount()).isEqualTo(1);
+        assertThat(first.getRefundPaise()).isEqualTo(25960);
+        assertThat(booking.getSeats()).extracting(BookingSeat::status)
+                .containsExactly(BookingSeat.Status.ACTIVE, BookingSeat.Status.CANCELLED);   // F7, F8
+        assertThat(booking.getSeats().get(1).cancellationId()).isEqualTo(first.getId());
+
+        Cancellation rest = booking.cancel(Set.of(), FULL_REFUND, CancellationReason.CUSTOMER, NOW);
+        assertThat(rest.getSeatCount()).isEqualTo(1);                             // only what was still active
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(booking.getCancellations()).hasSize(2);
+    }
+
+    @Test
+    void onlyActiveSeatsOfAConfirmedBookingCanBeCancelled() {
+        Booking booking = confirmed();
+        booking.cancel(Set.of(12L), FULL_REFUND, CancellationReason.CUSTOMER, NOW);
+
+        assertThatThrownBy(() -> booking.cancel(Set.of(12L), FULL_REFUND, CancellationReason.CUSTOMER, NOW))
+                .isInstanceOf(InvalidStateException.class).hasMessage("Seat F8 is already cancelled");
+        assertThatThrownBy(() -> booking.refundQuote(Set.of(99L), FULL_REFUND, NOW))
+                .isInstanceOf(ValidationException.class);
+        assertThatThrownBy(() -> hold().refundQuote(Set.of(), FULL_REFUND, NOW))
+                .isInstanceOf(InvalidStateException.class);
+    }
+
+    private static Booking confirmed() {
+        Booking booking = hold();
+        booking.startPayment(NOW, Duration.ofMinutes(5));
+        booking.confirm(POLICY, NOW);
+        return booking;
     }
 
     private static Booking hold() {

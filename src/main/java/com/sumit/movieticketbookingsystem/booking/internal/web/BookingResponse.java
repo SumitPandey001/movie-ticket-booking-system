@@ -1,6 +1,7 @@
 package com.sumit.movieticketbookingsystem.booking.internal.web;
 
 import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
+import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingSeat;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.PriceTotals;
 
@@ -16,13 +17,14 @@ record BookingResponse(UUID bookingId, String bookingRef, BookingStatus status, 
         return new BookingResponse(booking.getId(), booking.getBookingRef(), booking.getStatus(), booking.getShowId(),
                 booking.getShowStartTime(), booking.getHoldExpiresAt(),
                 booking.getSeats().stream()
-                        .map(seat -> new Seat(seat.layoutSeatId(), seat.seatLabel(), seat.amountPaise()))
+                        .map(seat -> new Seat(seat.layoutSeatId(), seat.seatLabel(), seat.amountPaise(),
+                                seat.status()))
                         .toList(),
                 new Price(totals.subtotal(), totals.discount(), totals.fee(), totals.tax(), totals.total()),
                 booking.getCouponCode());
     }
 
-    record Seat(long seatId, String label, long amountPaise) {
+    record Seat(long seatId, String label, long amountPaise, BookingSeat.Status status) {
     }
 
     record Price(long subtotalPaise, long discountPaise, long feePaise, long taxPaise, long totalPaise) {

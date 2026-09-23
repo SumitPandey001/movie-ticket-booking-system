@@ -1,5 +1,7 @@
 package com.sumit.movieticketbookingsystem.booking.internal.refund;
 
+import com.sumit.movieticketbookingsystem.booking.internal.domain.RefundRule;
+
 import java.util.List;
 
 /**
@@ -8,4 +10,13 @@ import java.util.List;
  */
 public record RefundPolicySnapshot(long policyId, String name, RefundPolicyType type, boolean refundFees,
                                    List<RefundSlab> slabs) {
+
+    /** The one place that maps a kind of policy to its rule; the compiler flags a type without a case. */
+    public RefundRule refundRule() {
+        return switch (type) {
+            case SLAB -> new SlabRefundRule(slabs, refundFees);
+            case FULL -> FullRefundRule.INSTANCE;
+            case NON_REFUNDABLE -> NoRefundRule.INSTANCE;
+        };
+    }
 }

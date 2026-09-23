@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.notification.internal;
 
+import com.sumit.movieticketbookingsystem.booking.BookingCancelled;
 import com.sumit.movieticketbookingsystem.booking.BookingConfirmed;
 import com.sumit.movieticketbookingsystem.payment.RefundCompleted;
 import com.sumit.movieticketbookingsystem.payment.RefundReason;
@@ -39,6 +40,18 @@ class NotificationListener {
                 "showTime", SHOW_TIME.format(booking.showStartTime().atZone(booking.zone())),
                 "seats", String.join(", ", booking.seatLabels()),
                 "total", Money.ofPaise(booking.totalPaise()).inRupees()));
+    }
+
+    @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
+    void on(BookingCancelled cancelled) {
+        notifications.notify(NotificationType.BOOKING_CANCELLED, cancelled.bookingId(),
+                cancelled.cancellationId().toString(), cancelled.userId(), Map.of(
+                        "bookingRef", cancelled.bookingRef(),
+                        "movieTitle", cancelled.movieTitle(),
+                        "seats", String.join(", ", cancelled.seatLabels()),
+                        "fullyCancelled", cancelled.fullyCancelled(),
+                        "refund", cancelled.refundPaise() == 0 ? ""                  // '' = nothing refunded
+                                : Money.ofPaise(cancelled.refundPaise()).inRupees()));
     }
 
     @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
