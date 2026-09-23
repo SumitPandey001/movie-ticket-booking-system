@@ -27,6 +27,7 @@ import java.util.Map;
  * @param paymentWindow      starting a payment keeps the seats at least this long, so a slow gateway doesn't lose them
  * @param paymentGrace       extra time a pending payment gets past its window before the sweeper expires it
  * @param cancellationCutoff customers can't cancel once the show is closer than this
+ * @param reminderLeadTime   how long before the show the reminder goes out
  * @param maxSeatsPerBooking most seats one booking may hold
  * @param convenienceFeePaise flat fee per seat
  * @param gstPercent         GST on tickets (after discount) and on the convenience fee
@@ -47,6 +48,7 @@ public record BookingProperties(
         @NotNull Duration paymentWindow,
         @NotNull Duration paymentGrace,
         @NotNull Duration cancellationCutoff,
+        @NotNull Duration reminderLeadTime,
         @Min(1) @Max(50) int maxSeatsPerBooking,
         @Min(0) long convenienceFeePaise,
         @Min(0) @Max(100) int gstPercent,

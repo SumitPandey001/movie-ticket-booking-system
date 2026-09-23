@@ -53,6 +53,7 @@ booking:
   payment-window: PT5M
   payment-grace: PT2M                           # a pending payment gets this long past its window before it expires
   cancellation-cutoff: PT30M
+  reminder-lead-time: PT2H
   max-seats-per-booking: 10
   convenience-fee-paise: 2000     # ₹20 per seat
   gst-percent: 18

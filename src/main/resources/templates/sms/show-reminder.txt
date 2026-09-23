@@ -1,0 +1,1 @@
+Reminder: [(${movieTitle})] at [(${theaterName})], [(${showTime})]. Seats [(${seats})]. Booking [(${bookingRef})].
