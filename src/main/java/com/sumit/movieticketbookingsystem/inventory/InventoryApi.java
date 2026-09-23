@@ -31,6 +31,15 @@ public interface InventoryApi {
      */
     List<HeldSeat> hold(long showId, Set<Long> seatIds, UUID bookingId, Instant expiresAt, Instant now);
 
+    /**
+     * Books the seats for good once they're paid for. Each seat must still be held by this booking, or be free
+     * again (its hold ran out and nobody took it). Waits for row locks rather than failing: a customer who has
+     * paid shouldn't lose out to a brief lock.
+     *
+     * @throws SeatsUnavailableException if another booking has any of the seats now; nothing is booked then
+     */
+    void confirm(long showId, Set<Long> seatIds, UUID bookingId, Instant now);
+
     /** Frees the seats the booking still holds (release, expiry, failed payment); returns how many. */
     int releaseHeld(long showId, UUID bookingId);
 

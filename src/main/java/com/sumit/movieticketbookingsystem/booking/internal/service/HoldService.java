@@ -16,7 +16,6 @@ import com.sumit.movieticketbookingsystem.pricing.SeatPriceLine;
 import com.sumit.movieticketbookingsystem.pricing.SeatToPrice;
 import com.sumit.movieticketbookingsystem.pricing.ShowPricing;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
-import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import com.sumit.movieticketbookingsystem.shared.persistence.ConstraintViolations;
 import com.sumit.movieticketbookingsystem.show.ShowApi;
@@ -111,7 +110,7 @@ public class HoldService {
      */
     @Transactional
     public Booking changeCoupon(UUID bookingId, UUID userId, String couponCode) {
-        Booking booking = ownBooking(bookingId, userId);
+        Booking booking = bookings.findOwn(bookingId, userId);
         if (booking.isHoldExpired(Instant.now(clock))) {
             throw new HoldExpiredException(bookingId);
         }
@@ -127,7 +126,7 @@ public class HoldService {
 
     @Transactional
     public Booking release(UUID bookingId, UUID userId) {
-        Booking booking = ownBooking(bookingId, userId);
+        Booking booking = bookings.findOwn(bookingId, userId);
         booking.release(Instant.now(clock));
         inventory.releaseHeld(booking.getShowId(), booking.getId());
         coupons.release(booking.getId());
@@ -136,7 +135,7 @@ public class HoldService {
 
     @Transactional(readOnly = true)
     public Booking booking(UUID bookingId, UUID userId) {
-        return ownBooking(bookingId, userId);
+        return bookings.findOwn(bookingId, userId);
     }
 
     /**
@@ -171,13 +170,6 @@ public class HoldService {
         if (quote.coupon() != null) {
             coupons.reserve(quote.coupon(), userId, bookingId, quote.discountPaise());
         }
-    }
-
-    // Someone else's booking is reported as not found, so the API never confirms that it exists.
-    private Booking ownBooking(UUID bookingId, UUID userId) {
-        return bookings.findById(bookingId)
-                .filter(booking -> booking.getUserId().equals(userId))
-                .orElseThrow(() -> new NotFoundException("Booking", bookingId));
     }
 
     private static List<BookingSeat> bookingSeats(List<SeatToBook> seats, PriceQuote quote) {

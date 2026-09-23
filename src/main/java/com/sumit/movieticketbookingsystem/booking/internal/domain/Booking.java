@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Version;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -66,6 +67,8 @@ public class Booking {
 
     private Instant createdAt;
 
+    private Instant confirmedAt;
+
     private Instant closedAt;
 
     protected Booking() {
@@ -110,6 +113,28 @@ public class Booking {
         seats.clear();
         seats.addAll(newSeats);
         setPrice(totals, newCouponCode);
+    }
+
+    /**
+     * The customer starts paying. The seats stay reserved for at least {@code paymentWindow} from now, so a
+     * payment started just before the hold runs out still has time to finish; an existing longer hold isn't cut.
+     */
+    public void startPayment(Instant now, Duration paymentWindow) {
+        status = status.transitionTo(BookingStatus.PAYMENT_PENDING);
+        Instant paymentDeadline = now.plus(paymentWindow);
+        if (paymentDeadline.isAfter(holdExpiresAt)) {
+            holdExpiresAt = paymentDeadline;
+        }
+    }
+
+    public void confirm(Instant now) {
+        status = status.transitionTo(BookingStatus.CONFIRMED);
+        confirmedAt = now;
+    }
+
+    /** The payment was declined; the customer starts again with a new hold. */
+    public void fail(Instant now) {
+        close(BookingStatus.FAILED, now);
     }
 
     /** The customer lets the hold go before it runs out. */
@@ -190,6 +215,10 @@ public class Booking {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getConfirmedAt() {
+        return confirmedAt;
     }
 
     public Instant getClosedAt() {

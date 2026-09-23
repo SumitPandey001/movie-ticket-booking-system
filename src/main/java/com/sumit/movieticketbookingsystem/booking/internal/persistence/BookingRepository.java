@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.booking.internal.persistence;
 
 import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
+import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,6 +16,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Override
     @EntityGraph(attributePaths = "seats")
     Optional<Booking> findById(UUID id);
+
+    /** Someone else's booking is reported as not found, so the API never confirms that it exists. */
+    default Booking findOwn(UUID bookingId, UUID userId) {
+        return findById(bookingId)
+                .filter(booking -> booking.getUserId().equals(userId))
+                .orElseThrow(() -> new NotFoundException("Booking", bookingId));
+    }
 
     /** At most one, thanks to booking_one_active_hold. */
     Optional<Booking> findByUserIdAndShowIdAndStatusIn(UUID userId, long showId, Collection<BookingStatus> statuses);

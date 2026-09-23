@@ -51,6 +51,13 @@ class CouponRedemptionRepository {
                 .update();
     }
 
+    void consume(UUID bookingId) {
+        jdbc.sql("UPDATE coupon_redemption SET status = 'CONSUMED', updated_at = now() "
+                        + "WHERE booking_id = ? AND status = 'RESERVED'")
+                .param(bookingId)
+                .update();
+    }
+
     /** Releases the booking's live redemption and returns whose use it was, so the counters can be given back. */
     Optional<Use> releaseLive(UUID bookingId) {
         return jdbc.sql("""
