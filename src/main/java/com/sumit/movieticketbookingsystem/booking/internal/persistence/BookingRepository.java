@@ -4,6 +4,7 @@ import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -56,6 +57,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             Pageable pageable);
 
     Page<Booking> findByUserIdAndStatus(UUID userId, BookingStatus status, Pageable pageable);
+
+    /** Candidates for the hold-expiry sweeper, oldest first. */
+    @Query("""
+            SELECT b.id FROM Booking b
+            WHERE (b.status = BookingStatus.HELD AND b.holdExpiresAt <= :now)
+               OR (b.status = BookingStatus.PAYMENT_PENDING AND b.holdExpiresAt <= :graceCutoff)
+            ORDER BY b.holdExpiresAt
+            """)
+    List<UUID> findIdsDueToExpire(Instant now, Instant graceCutoff, Limit limit);
 
     /** At most one, thanks to booking_one_active_hold. */
     Optional<Booking> findByUserIdAndShowIdAndStatusIn(UUID userId, long showId, Collection<BookingStatus> statuses);

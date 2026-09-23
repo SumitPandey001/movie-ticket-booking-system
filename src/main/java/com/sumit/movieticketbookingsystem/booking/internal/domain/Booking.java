@@ -213,6 +213,18 @@ public class Booking {
         return active.stream().filter(seat -> seatIds.contains(seat.layoutSeatId())).toList();
     }
 
+    /**
+     * Whether the sweeper should close this booking: a hold past its time, or a payment that's had its window
+     * and the grace period on top without an answer.
+     */
+    public boolean isDueToExpire(Instant now, Duration paymentGrace) {
+        return switch (status) {
+            case HELD -> !now.isBefore(holdExpiresAt);
+            case PAYMENT_PENDING -> !now.isBefore(holdExpiresAt.plus(paymentGrace));
+            default -> false;
+        };
+    }
+
     public boolean isHoldExpired(Instant now) {
         return status == BookingStatus.HELD && !now.isBefore(holdExpiresAt);
     }

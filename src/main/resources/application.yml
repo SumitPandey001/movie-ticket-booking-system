@@ -32,6 +32,9 @@ logging:
     # Lettuce looks for a macOS-native DNS resolver it doesn't need; we only ever resolve the Redis host
     io.netty.resolver.dns.DnsServerAddressStreamProviders: error
 
+jobs:
+  enabled: true                                 # scheduled jobs; tests switch them off and run them by hand
+
 booking:
   cleaning-buffer: PT20M
   late-night-cutoff: "03:00"
@@ -48,6 +51,7 @@ booking:
     seat-counter-ttl: PT10M
   hold-duration: PT8M
   payment-window: PT5M
+  payment-grace: PT2M                           # a pending payment gets this long past its window before it expires
   cancellation-cutoff: PT30M
   max-seats-per-booking: 10
   convenience-fee-paise: 2000     # ₹20 per seat
