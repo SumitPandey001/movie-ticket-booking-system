@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: local
   application:
     name: movie-ticket-booking-system
   threads:
@@ -20,5 +22,5 @@ spring:
       on-profile: local
   datasource:
     url: jdbc:postgresql://localhost:5432/moviebooking
-    username: moviebooking
-    password: moviebooking
+    username: postgres
+    password: alex@123
