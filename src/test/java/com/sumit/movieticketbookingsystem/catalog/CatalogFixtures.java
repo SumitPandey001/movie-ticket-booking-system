@@ -6,6 +6,7 @@ import static com.sumit.movieticketbookingsystem.ApiRequests.asAdmin;
 import static com.sumit.movieticketbookingsystem.ApiRequests.idOf;
 import static com.sumit.movieticketbookingsystem.ApiRequests.uniqueName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -37,9 +38,14 @@ public class CatalogFixtures {
                 """.formatted(name));
     }
 
-    /** A fresh screen in a fresh theater and city. */
+    /** A fresh screen in a fresh theater and city. The theater charges ₹200 / ₹300 / ₹500 by default. */
     public long screen() throws Exception {
-        return screen(theater(city(), uniqueName("Theater")), "Audi 1");
+        long theaterId = theater(city(), uniqueName("Theater"));
+        mvc.perform(asAdmin(put("/api/v1/admin/theaters/{id}/prices", theaterId)).content("""
+                        {"prices": {"REGULAR": 20000, "PREMIUM": 30000, "RECLINER": 50000}}
+                        """))
+                .andExpect(status().isOk());
+        return screen(theaterId, "Audi 1");
     }
 
     /** A fresh screen with an active 2 x 5 layout (A1-A5 regular, B1-B5 premium). */

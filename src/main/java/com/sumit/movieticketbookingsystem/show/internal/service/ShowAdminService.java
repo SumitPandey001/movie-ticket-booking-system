@@ -6,6 +6,7 @@ import com.sumit.movieticketbookingsystem.catalog.LayoutView;
 import com.sumit.movieticketbookingsystem.catalog.MovieInfo;
 import com.sumit.movieticketbookingsystem.catalog.ScreenInfo;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
+import com.sumit.movieticketbookingsystem.pricing.PricingApi;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
@@ -22,7 +23,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ShowAdminService {
@@ -30,25 +33,28 @@ public class ShowAdminService {
     private final ShowRepository shows;
     private final CatalogApi catalog;
     private final InventoryApi inventory;
+    private final PricingApi pricing;
     private final ShowDateResolver showDateResolver;
     private final Duration cleaningBuffer;
     private final Clock clock;
 
-    ShowAdminService(ShowRepository shows, CatalogApi catalog, InventoryApi inventory,
+    ShowAdminService(ShowRepository shows, CatalogApi catalog, InventoryApi inventory, PricingApi pricing,
             ShowDateResolver showDateResolver, BookingProperties properties, Clock clock) {
         this.shows = shows;
         this.catalog = catalog;
         this.inventory = inventory;
+        this.pricing = pricing;
         this.showDateResolver = showDateResolver;
         this.cleaningBuffer = properties.cleaningBuffer();
         this.clock = clock;
     }
 
     /**
-     * @param showDate optional; defaults to the late-night rule in {@link ShowDateResolver}
+     * @param showDate       optional; defaults to the late-night rule in {@link ShowDateResolver}
+     * @param priceOverrides price in paise by category code, replacing the theater's default for this show
      */
     public record CreateShow(long movieId, long screenId, Instant start, String language, String format,
-                             LocalDate showDate) {
+                             LocalDate showDate, Map<String, Long> priceOverrides) {
     }
 
     @Transactional
@@ -88,6 +94,16 @@ public class ShowAdminService {
             throw e;
         }
         inventory.initializeSeats(show.getId(), layout);
+        Set<Long> categoryIds = layout.seats().stream().map(LayoutView.Seat::categoryId).collect(Collectors.toSet());
+        show.updatePriceFrom(pricing.initializeShowPrices(
+                show.getId(), screen.theaterId(), categoryIds, command.priceOverrides()));
+        return show;
+    }
+
+    @Transactional
+    public Show overridePrices(long showId, Map<String, Long> prices) {
+        Show show = find(showId);
+        show.updatePriceFrom(pricing.overrideShowPrices(showId, prices));
         return show;
     }
 

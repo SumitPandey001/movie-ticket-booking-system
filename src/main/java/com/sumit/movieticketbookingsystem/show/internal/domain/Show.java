@@ -50,6 +50,8 @@ public class Show extends AuditedEntity {
 
     private int totalSeats;
 
+    private Long priceFromPaise;
+
     @Version
     private long version;
 
@@ -78,6 +80,11 @@ public class Show extends AuditedEntity {
 
     public void cancel() {
         status = status.transitionTo(ShowStatus.CANCELLED);
+    }
+
+    /** The lowest category price, kept on the show so browsing doesn't have to ask pricing. */
+    public void updatePriceFrom(long pricePaise) {
+        this.priceFromPaise = pricePaise;
     }
 
     /** Where the show runs; the layout is the screen's active one at creation time and never changes. */
@@ -138,5 +145,9 @@ public class Show extends AuditedEntity {
 
     public int getTotalSeats() {
         return totalSeats;
+    }
+
+    public Long getPriceFromPaise() {
+        return priceFromPaise;
     }
 }

@@ -5,6 +5,7 @@ import com.sumit.movieticketbookingsystem.catalog.CitySummary;
 import com.sumit.movieticketbookingsystem.catalog.LayoutView;
 import com.sumit.movieticketbookingsystem.catalog.MovieInfo;
 import com.sumit.movieticketbookingsystem.catalog.ScreenInfo;
+import com.sumit.movieticketbookingsystem.catalog.SeatCategoryInfo;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.City;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.LayoutStatus;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Movie;
@@ -14,9 +15,11 @@ import com.sumit.movieticketbookingsystem.catalog.internal.domain.SeatType;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Theater;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.CityRepository;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.MovieRepository;
+import com.sumit.movieticketbookingsystem.catalog.internal.persistence.SeatCategoryRepository;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.SeatLayoutRepository;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.TheaterRepository;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,13 +34,15 @@ class CatalogFacade implements CatalogApi {
     private final CityRepository cities;
     private final SeatLayoutRepository layouts;
     private final MovieRepository movies;
+    private final SeatCategoryRepository categories;
 
     CatalogFacade(TheaterRepository theaters, CityRepository cities, SeatLayoutRepository layouts,
-            MovieRepository movies) {
+            MovieRepository movies, SeatCategoryRepository categories) {
         this.theaters = theaters;
         this.cities = cities;
         this.layouts = layouts;
         this.movies = movies;
+        this.categories = categories;
     }
 
     @Override
@@ -72,6 +77,13 @@ class CatalogFacade implements CatalogApi {
         Movie movie = movies.findById(movieId).orElseThrow(() -> new NotFoundException("Movie", movieId));
         return new MovieInfo(movie.getId(), movie.getTitle(), Duration.ofMinutes(movie.getDurationMinutes()),
                 movie.getCertification().name(), movie.isActive());
+    }
+
+    @Override
+    public List<SeatCategoryInfo> seatCategories() {
+        return categories.findAll(Sort.by("sortOrder")).stream()
+                .map(category -> new SeatCategoryInfo(category.getId(), category.getCode(), category.getName()))
+                .toList();
     }
 
     private City findCity(long cityId) {
