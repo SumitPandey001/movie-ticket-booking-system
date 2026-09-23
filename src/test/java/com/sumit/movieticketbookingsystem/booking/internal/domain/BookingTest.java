@@ -147,6 +147,22 @@ class BookingTest {
                 .isInstanceOf(InvalidStateException.class);
     }
 
+    @Test
+    void aReminderIsDueInsideTheLeadTimeAndOnlyOnce() {
+        Booking booking = confirmed();                            // show at NOW + 24h
+        Instant show = NOW.plusSeconds(86400);
+        Duration twoHours = Duration.ofHours(2);
+
+        assertThat(booking.isDueForReminder(show.minus(twoHours).minusSeconds(1), twoHours)).isFalse();
+        assertThat(booking.isDueForReminder(show.minus(twoHours), twoHours)).isTrue();
+        assertThat(booking.isDueForReminder(show, twoHours)).isFalse();             // already started
+        assertThat(hold().isDueForReminder(show.minusSeconds(60), twoHours)).isFalse();
+
+        booking.markReminded(show.minusSeconds(60));
+        assertThat(booking.isDueForReminder(show.minusSeconds(30), twoHours)).isFalse();
+        assertThatThrownBy(() -> booking.markReminded(show)).isInstanceOf(InvalidStateException.class);
+    }
+
     private static Booking confirmed() {
         Booking booking = hold();
         booking.startPayment(NOW, Duration.ofMinutes(5));

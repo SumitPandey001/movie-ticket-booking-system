@@ -88,6 +88,8 @@ public class Booking {
 
     private Instant confirmedAt;
 
+    private Instant reminderSentAt;
+
     private Instant closedAt;
 
     protected Booking() {
@@ -225,6 +227,19 @@ public class Booking {
         };
     }
 
+    /** Whether a reminder should go out now: confirmed, not reminded yet, and the show within the lead time. */
+    public boolean isDueForReminder(Instant now, Duration leadTime) {
+        return status == BookingStatus.CONFIRMED && reminderSentAt == null
+                && showStartTime.isAfter(now) && !showStartTime.isAfter(now.plus(leadTime));
+    }
+
+    public void markReminded(Instant now) {
+        if (reminderSentAt != null) {
+            throw new InvalidStateException("Booking " + bookingRef + " has already been reminded");
+        }
+        reminderSentAt = now;
+    }
+
     public boolean isHoldExpired(Instant now) {
         return status == BookingStatus.HELD && !now.isBefore(holdExpiresAt);
     }
@@ -305,6 +320,10 @@ public class Booking {
 
     public Instant getConfirmedAt() {
         return confirmedAt;
+    }
+
+    public Instant getReminderSentAt() {
+        return reminderSentAt;
     }
 
     public Instant getClosedAt() {

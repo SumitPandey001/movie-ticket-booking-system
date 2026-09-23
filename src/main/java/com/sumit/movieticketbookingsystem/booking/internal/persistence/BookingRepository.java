@@ -67,6 +67,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             """)
     List<UUID> findIdsDueToExpire(Instant now, Instant graceCutoff, Limit limit);
 
+    /** Confirmed bookings whose show starts within the lead time and that haven't been reminded yet. */
+    @Query("""
+            SELECT b.id FROM Booking b
+            WHERE b.status = BookingStatus.CONFIRMED AND b.reminderSentAt IS NULL
+              AND b.showStartTime > :now AND b.showStartTime <= :horizon
+            ORDER BY b.showStartTime
+            """)
+    List<UUID> findIdsDueForReminder(Instant now, Instant horizon, Limit limit);
+
     /** At most one, thanks to booking_one_active_hold. */
     Optional<Booking> findByUserIdAndShowIdAndStatusIn(UUID userId, long showId, Collection<BookingStatus> statuses);
 }

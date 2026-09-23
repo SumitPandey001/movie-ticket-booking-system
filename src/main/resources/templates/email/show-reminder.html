@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body style="font-family: Arial, sans-serif; color: #222;">
+<p>Hi <span th:text="${name} ?: 'there'">Asha</span>,</p>
+<p><strong th:text="${movieTitle}">Movie</strong> starts at <strong th:text="${showTime}">Sat 3 Oct, 7:30 PM</strong>
+    at <span th:text="${theaterName}">Theater</span>.</p>
+<p>Your seats: <strong th:text="${seats}">F7, F8</strong> (booking <span th:text="${bookingRef}">BK000001</span>).
+    Please arrive a little early. Enjoy the show!</p>
+</body>
+</html>

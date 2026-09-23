@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.booking.internal.service;
 
 import com.sumit.movieticketbookingsystem.booking.BookingCancelled;
 import com.sumit.movieticketbookingsystem.booking.BookingConfirmed;
+import com.sumit.movieticketbookingsystem.booking.ReminderDue;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingSeat;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
@@ -19,7 +20,7 @@ import java.util.List;
  * Call it inside the transaction that changed the booking: the event is stored with it and delivered after commit.
  */
 @Component
-class BookingEvents {
+public class BookingEvents {
 
     private final ShowApi shows;
     private final CatalogApi catalog;
@@ -38,6 +39,14 @@ class BookingEvents {
                 catalog.city(show.cityId()).zone(),
                 booking.getSeats().stream().map(BookingSeat::seatLabel).toList(),
                 booking.getTotals().total()));
+    }
+
+    public void reminderDue(Booking booking) {
+        ShowDetails show = shows.show(booking.getShowId());
+        events.publishEvent(new ReminderDue(booking.getId(), booking.getBookingRef(), booking.getUserId(),
+                catalog.movie(show.movieId()).title(), theaterName(show.theaterId()), show.startTime(),
+                catalog.city(show.cityId()).zone(),
+                booking.getSeats().stream().filter(BookingSeat::isActive).map(BookingSeat::seatLabel).toList()));
     }
 
     void cancelled(Booking booking, Cancellation cancellation) {

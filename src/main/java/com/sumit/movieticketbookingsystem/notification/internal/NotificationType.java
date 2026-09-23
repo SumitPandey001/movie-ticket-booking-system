@@ -6,6 +6,7 @@ enum NotificationType {
 
     BOOKING_CONFIRMED("Your tickets are confirmed · %s"),
     BOOKING_CANCELLED("Booking %s cancelled"),
+    SHOW_REMINDER("Your show starts soon · %s"),
     REFUND_COMPLETED("Your refund for %s is on its way");
 
     private final String subject;
