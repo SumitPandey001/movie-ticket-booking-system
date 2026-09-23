@@ -18,4 +18,7 @@ interface PaymentProcessor {
     String mask(PaymentDetails details);
 
     ProcessorResult charge(Payment payment, SimulatedOutcome outcome);
+
+    /** Every method supports refunds back to where the money came from. */
+    ProcessorResult refund(Refund refund);
 }

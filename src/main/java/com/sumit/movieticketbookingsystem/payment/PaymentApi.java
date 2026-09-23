@@ -20,4 +20,13 @@ public interface PaymentApi {
      * A declined payment is a normal result, not an exception.
      */
     PaymentResult execute(UUID paymentId, PaymentDetails details, SimulatedOutcome outcome);
+
+    /**
+     * Refunds part or all of the booking's successful payment. Joins the caller's transaction; the money moves
+     * after commit, and a {@link RefundCompleted} event follows. A booking's late-payment refund is only ever
+     * requested once; asking again returns the existing one.
+     *
+     * @throws IllegalStateException if the booking has no successful payment or the refund would exceed it
+     */
+    UUID requestRefund(RefundRequest request);
 }

@@ -55,7 +55,10 @@ public record BookingProperties(
     public record Cache(@NotNull Duration showDayTtl, @NotNull Duration seatCounterTtl) {
     }
 
-    /** Bank codes for net banking and wallet providers the checkout offers. */
-    public record Payment(@NotEmpty List<String> netBankingBanks, @NotEmpty List<String> wallets) {
+    /**
+     * @param simulatedDelay how long a DELAYED simulated payment takes before it succeeds
+     */
+    public record Payment(@NotNull Duration simulatedDelay, @NotEmpty List<String> netBankingBanks,
+                          @NotEmpty List<String> wallets) {
     }
 }

@@ -1,19 +1,25 @@
 package com.sumit.movieticketbookingsystem.payment.internal;
 
 /**
- * What the gateway said. Exactly one of the two strings is set.
+ * What the gateway said: done (with its reference), declined (with a reason), or pending.
  */
-record ProcessorResult(String providerTxnId, String failureReason) {
+record ProcessorResult(Outcome outcome, String reference, String failureReason) {
 
-    static ProcessorResult success(String providerTxnId) {
-        return new ProcessorResult(providerTxnId, null);
+    enum Outcome {
+        SUCCEEDED,
+        FAILED,
+        PENDING
+    }
+
+    static ProcessorResult success(String reference) {
+        return new ProcessorResult(Outcome.SUCCEEDED, reference, null);
     }
 
     static ProcessorResult failure(String reason) {
-        return new ProcessorResult(null, reason);
+        return new ProcessorResult(Outcome.FAILED, null, reason);
     }
 
-    boolean succeeded() {
-        return providerTxnId != null;
+    static ProcessorResult pending() {
+        return new ProcessorResult(Outcome.PENDING, null, null);
     }
 }

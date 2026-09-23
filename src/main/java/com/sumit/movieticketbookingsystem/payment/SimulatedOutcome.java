@@ -5,5 +5,7 @@ package com.sumit.movieticketbookingsystem.payment;
  */
 public enum SimulatedOutcome {
     SUCCESS,
-    FAILURE
+    FAILURE,
+    /** the gateway answers "pending" and the payment succeeds a little later, like a slow UPI approval */
+    DELAYED
 }

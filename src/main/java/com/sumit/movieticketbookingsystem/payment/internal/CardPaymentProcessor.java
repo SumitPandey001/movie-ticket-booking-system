@@ -63,6 +63,11 @@ class CardPaymentProcessor implements PaymentProcessor {
         return simulator.charge(payment, outcome);
     }
 
+    @Override
+    public ProcessorResult refund(Refund refund) {
+        return simulator.refund(refund);
+    }
+
     private static String digits(String number) {
         return number == null ? "" : number.replaceAll("[\\s-]", "");
     }

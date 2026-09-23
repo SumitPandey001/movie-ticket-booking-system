@@ -42,4 +42,9 @@ class UpiPaymentProcessor implements PaymentProcessor {
     public ProcessorResult charge(Payment payment, SimulatedOutcome outcome) {
         return simulator.charge(payment, outcome);
     }
+
+    @Override
+    public ProcessorResult refund(Refund refund) {
+        return simulator.refund(refund);
+    }
 }
