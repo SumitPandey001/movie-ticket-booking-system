@@ -3,10 +3,15 @@ package com.sumit.movieticketbookingsystem.show.internal.web;
 import com.sumit.movieticketbookingsystem.show.internal.service.ShowAdminService;
 import com.sumit.movieticketbookingsystem.show.internal.service.ShowAdminService.CreateShow;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -31,7 +37,8 @@ class ShowAdminController {
     @ResponseStatus(HttpStatus.CREATED)
     ShowResponse create(@Valid @RequestBody CreateShowRequest request) {
         return ShowResponse.from(showService.create(new CreateShow(request.movieId(), request.screenId(),
-                request.startTime().toInstant(), request.language(), request.format(), request.showDate())));
+                request.startTime().toInstant(), request.language(), request.format(), request.showDate(),
+                request.priceOverridesOrEmpty())));
     }
 
     @GetMapping
@@ -49,6 +56,11 @@ class ShowAdminController {
         return ShowResponse.from(showService.cancel(id));
     }
 
+    @PutMapping("/{id}/prices")
+    ShowResponse overridePrices(@PathVariable long id, @Valid @RequestBody ShowPricesRequest request) {
+        return ShowResponse.from(showService.overridePrices(id, request.prices()));
+    }
+
     @PostMapping("/{id}/seats/block")
     SeatChangeResponse blockSeats(@PathVariable long id, @Valid @RequestBody SeatIdsRequest request) {
         return new SeatChangeResponse(showService.blockSeats(id, request.seatIds()));
@@ -57,6 +69,10 @@ class ShowAdminController {
     @PostMapping("/{id}/seats/unblock")
     SeatChangeResponse unblockSeats(@PathVariable long id, @Valid @RequestBody SeatIdsRequest request) {
         return new SeatChangeResponse(showService.unblockSeats(id, request.seatIds()));
+    }
+
+    /** Price in paise by category code, e.g. {@code {"prices": {"PREMIUM": 32000}}}. */
+    record ShowPricesRequest(@NotEmpty Map<@NotBlank String, @NotNull @Positive Long> prices) {
     }
 
     /** Seats left as they were, e.g. blocking a seat that's already blocked. Empty means every seat changed. */
