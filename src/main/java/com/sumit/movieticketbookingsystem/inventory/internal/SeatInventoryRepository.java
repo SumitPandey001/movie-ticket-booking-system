@@ -1,6 +1,7 @@
 package com.sumit.movieticketbookingsystem.inventory.internal;
 
 import com.sumit.movieticketbookingsystem.catalog.LayoutView;
+import com.sumit.movieticketbookingsystem.inventory.SeatStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -47,6 +48,16 @@ class SeatInventoryRepository {
                     counts.put(rs.getLong("show_id"), rs.getInt("available"));
                 });
         return counts;
+    }
+
+    Map<Long, SeatStatus> statuses(long showId) {
+        Map<Long, SeatStatus> statuses = new HashMap<>();
+        jdbc.sql("SELECT layout_seat_id, status FROM show_seat WHERE show_id = ?")
+                .param(showId)
+                .query(rs -> {
+                    statuses.put(rs.getLong("layout_seat_id"), SeatStatus.valueOf(rs.getString("status")));
+                });
+        return statuses;
     }
 
     /** Moves the given seats from one status to another and returns the ids that actually changed. */

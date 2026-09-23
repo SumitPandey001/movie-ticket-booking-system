@@ -51,4 +51,10 @@ class PricingFacade implements PricingApi {
         });
         return prices.lowestShowPrice(showId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, Long> showPrices(long showId) {
+        return prices.showPrices(showId);
+    }
 }
