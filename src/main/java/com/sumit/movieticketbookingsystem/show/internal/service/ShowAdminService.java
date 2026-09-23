@@ -11,6 +11,7 @@ import com.sumit.movieticketbookingsystem.shared.BookingProperties;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import com.sumit.movieticketbookingsystem.shared.persistence.ConstraintViolations;
+import com.sumit.movieticketbookingsystem.show.ShowCancelled;
 import com.sumit.movieticketbookingsystem.show.internal.domain.Show;
 import com.sumit.movieticketbookingsystem.show.internal.persistence.ShowRepository;
 import com.sumit.movieticketbookingsystem.show.internal.query.ShowListingChanged;
@@ -135,6 +136,7 @@ public class ShowAdminService {
         Show show = find(showId);
         show.cancel();
         listingChanged(show);
+        events.publishEvent(new ShowCancelled(show.getId(), Instant.now(clock)));
         return show;
     }
 

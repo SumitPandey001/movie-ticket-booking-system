@@ -8,6 +8,7 @@ import com.sumit.movieticketbookingsystem.booking.internal.domain.Cancellation;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.RefundQuote;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.RefundRule;
 import com.sumit.movieticketbookingsystem.booking.internal.persistence.BookingRepository;
+import com.sumit.movieticketbookingsystem.booking.internal.refund.FullRefundRule;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
 import com.sumit.movieticketbookingsystem.payment.PaymentApi;
 import com.sumit.movieticketbookingsystem.payment.RefundReason;
@@ -60,7 +61,7 @@ public class CancellationService {
         Booking booking = bookings.findOwn(bookingId, userId);
         Instant now = Instant.now(clock);
         requireBeforeCutoff(booking, now);
-        return booking.refundQuote(seatIds, ruleFor(booking), now);
+        return booking.refundQuote(seatIds, ruleFor(booking, CancellationReason.CUSTOMER), now);
     }
 
     /** @param seatIds active seats of the booking; empty for all of them */
@@ -72,8 +73,30 @@ public class CancellationService {
         return cancel(booking, seatIds, CancellationReason.CUSTOMER, now);
     }
 
+    /**
+     * One booking of a cancelled show, in its own transaction: a hold is released, a confirmed booking is
+     * cancelled in full with every paisa back (no policy, no cutoff). Anything else is left alone: a finished
+     * booking needs nothing, and a pending payment takes the late-payment refund once it completes, because
+     * confirm finds the show cancelled. The row lock orders this against a confirm already under way.
+     */
+    @Transactional
+    public void cancelForShow(UUID bookingId) {
+        Booking booking = bookings.findByIdForUpdate(bookingId).orElseThrow();
+        Instant now = Instant.now(clock);
+        switch (booking.getStatus()) {
+            case HELD -> {
+                booking.release(now);
+                inventory.releaseHeld(booking.getShowId(), bookingId);
+                coupons.release(bookingId);
+            }
+            case CONFIRMED -> cancel(booking, Set.of(), CancellationReason.SHOW_CANCELLED, now);
+            default -> {
+            }
+        }
+    }
+
     private CancellationResult cancel(Booking booking, Set<Long> seatIds, CancellationReason reason, Instant now) {
-        Cancellation cancellation = booking.cancel(seatIds, ruleFor(booking), reason, now);
+        Cancellation cancellation = booking.cancel(seatIds, ruleFor(booking, reason), reason, now);
         Set<Long> cancelledSeats = booking.getSeats().stream()
                 .filter(seat -> cancellation.getId().equals(seat.cancellationId()))
                 .map(BookingSeat::layoutSeatId)
@@ -100,8 +123,11 @@ public class CancellationService {
         }
     }
 
-    private static RefundRule ruleFor(Booking booking) {
-        return booking.getRefundPolicySnapshot().refundRule();
+    private static RefundRule ruleFor(Booking booking, CancellationReason reason) {
+        return switch (reason) {
+            case CUSTOMER -> booking.getRefundPolicySnapshot().refundRule();
+            case SHOW_CANCELLED -> FullRefundRule.INSTANCE;             // not the customer's doing
+        };
     }
 
     private static RefundReason refundReason(CancellationReason reason) {
