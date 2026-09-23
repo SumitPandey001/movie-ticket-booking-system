@@ -25,6 +25,7 @@ import java.util.Map;
  * @param cache              how long Redis keeps the browse cache and the seats-left counters
  * @param holdDuration       how long held seats stay reserved while the customer pays
  * @param paymentWindow      starting a payment keeps the seats at least this long, so a slow gateway doesn't lose them
+ * @param paymentGrace       extra time a pending payment gets past its window before the sweeper expires it
  * @param cancellationCutoff customers can't cancel once the show is closer than this
  * @param maxSeatsPerBooking most seats one booking may hold
  * @param convenienceFeePaise flat fee per seat
@@ -44,6 +45,7 @@ public record BookingProperties(
         @NotNull @Valid Cache cache,
         @NotNull Duration holdDuration,
         @NotNull Duration paymentWindow,
+        @NotNull Duration paymentGrace,
         @NotNull Duration cancellationCutoff,
         @Min(1) @Max(50) int maxSeatsPerBooking,
         @Min(0) long convenienceFeePaise,
