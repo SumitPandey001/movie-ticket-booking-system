@@ -12,6 +12,7 @@ import com.sumit.movieticketbookingsystem.pricing.PriceQuote;
 import com.sumit.movieticketbookingsystem.pricing.PricingApi;
 import com.sumit.movieticketbookingsystem.pricing.SeatPriceLine;
 import com.sumit.movieticketbookingsystem.pricing.SeatToPrice;
+import com.sumit.movieticketbookingsystem.pricing.ShowPricing;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
@@ -79,7 +80,8 @@ public class HoldService {
         UUID bookingId = UUID.randomUUID();
         List<HeldSeat> held = inventory.hold(show.showId(), command.seatIds(), bookingId,
                 now.plus(properties.holdDuration()), now);
-        PriceQuote quote = pricing.quote(show.showId(),
+        PriceQuote quote = pricing.quote(
+                new ShowPricing(show.showId(), show.cityId(), show.theaterId(), show.showDate()),
                 held.stream().map(seat -> new SeatToPrice(seat.layoutSeatId(), seat.categoryId())).toList());
 
         // ponytail: a booking_ref clash (1 in ~10^9 per hold) fails this hold with a 500; retry with a fresh
@@ -141,7 +143,7 @@ public class HoldService {
         return held.stream()
                 .map(seat -> {
                     SeatPriceLine line = lines.get(seat.layoutSeatId());
-                    return new BookingSeat(seat.layoutSeatId(), seat.label(), seat.categoryId(), line.tierPaise(),
+                    return new BookingSeat(seat.layoutSeatId(), seat.label(), seat.categoryId(), line.basePaise(),
                             line.discountPaise(), line.feePaise() + line.feeTaxPaise(), line.amountPaise());
                 })
                 .toList();

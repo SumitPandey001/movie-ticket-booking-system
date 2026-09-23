@@ -17,12 +17,12 @@ class BaseTierPriceRule implements PricingRule {
 
     @Override
     public void apply(PricingContext context) {
-        Map<Long, Long> byCategory = prices.showPrices(context.showId());
+        Map<Long, Long> byCategory = prices.showPrices(context.show().showId());
         for (PricingContext.Line line : context.lines()) {
             Long tier = byCategory.get(line.categoryId);
             if (tier == null) {
                 // every category of the layout gets a price when the show is created
-                throw new IllegalStateException("Show " + context.showId() + " has no price for category "
+                throw new IllegalStateException("Show " + context.show().showId() + " has no price for category "
                         + line.categoryId);
             }
             line.tier = tier;

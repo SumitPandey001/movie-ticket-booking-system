@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.show;
 
 import com.sumit.movieticketbookingsystem.TestcontainersConfiguration;
 import com.sumit.movieticketbookingsystem.catalog.CatalogFixtures;
+import com.sumit.movieticketbookingsystem.TestDates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 
 import static com.sumit.movieticketbookingsystem.ApiRequests.asAdmin;
 import static com.sumit.movieticketbookingsystem.ApiRequests.asCustomer;
@@ -52,7 +52,7 @@ class SeatMapIT {
                 """);
         mvc.perform(asAdmin(post("/api/v1/admin/layouts/{id}/activate", layoutId))).andExpect(status().isOk());
         movieId = catalog.movie(140);
-        start = OffsetDateTime.now(ZoneOffset.ofHoursMinutes(5, 30)).plusDays(5).truncatedTo(ChronoUnit.DAYS).withHour(20);
+        start = TestDates.weekday(5).atTime(20, 0).atOffset(ZoneOffset.ofHoursMinutes(5, 30));
     }
 
     @Test

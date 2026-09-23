@@ -100,15 +100,14 @@ public class ShowAdminService {
         }
         inventory.initializeSeats(show.getId(), layout);
         Set<Long> categoryIds = layout.seats().stream().map(LayoutView.Seat::categoryId).collect(Collectors.toSet());
-        show.updatePriceFrom(pricing.initializeShowPrices(
-                show.getId(), screen.theaterId(), categoryIds, command.priceOverrides()));
+        show.updatePriceFrom(pricing.initializeShowPrices(ShowPricings.of(show), categoryIds, command.priceOverrides()));
         return show;
     }
 
     @Transactional
     public Show overridePrices(long showId, Map<String, Long> prices) {
         Show show = find(showId);
-        show.updatePriceFrom(pricing.overrideShowPrices(showId, prices));
+        show.updatePriceFrom(pricing.overrideShowPrices(ShowPricings.of(show), prices));
         listingChanged(show);
         return show;
     }

@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.show;
 
 import com.sumit.movieticketbookingsystem.TestcontainersConfiguration;
 import com.sumit.movieticketbookingsystem.catalog.CatalogFixtures;
+import com.sumit.movieticketbookingsystem.TestDates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +61,7 @@ class BrowseApiIT {
         catalog = new CatalogFixtures(mvc);
         cityId = catalog.city();
         movieId = catalog.movie(120);
-        day = LocalDate.now(IST).plusDays(2);
+        day = TestDates.weekday(2);
 
         long alphaScreen = catalog.screenWithActiveLayout(catalog.pricedTheater(cityId, "Alpha Talkies"));
         long zetaScreen = catalog.screenWithActiveLayout(catalog.pricedTheater(cityId, "Zeta Cinemas"));
