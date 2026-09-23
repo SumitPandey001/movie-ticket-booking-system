@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static com.sumit.movieticketbookingsystem.ApiRequests.asAdmin;
-import static com.sumit.movieticketbookingsystem.ApiRequests.idOf;
-import static com.sumit.movieticketbookingsystem.ApiRequests.uniqueName;
 import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,20 +25,20 @@ class TheaterApiIT {
     @Autowired
     private MockMvc mvc;
 
+    private CatalogFixtures fixtures;
     private long cityId;
 
     @BeforeEach
     void createCity() throws Exception {
-        cityId = create("/api/v1/admin/cities", """
-                {"name": "%s"}
-                """.formatted(uniqueName("Chennai")));
+        fixtures = new CatalogFixtures(mvc);
+        cityId = fixtures.city();
     }
 
     @Test
     void theaterWithScreens() throws Exception {
-        long theaterId = createTheater(cityId, "PVR Grand");
-        long audi1 = addScreen(theaterId, "Audi 1");
-        addScreen(theaterId, "Audi 2");
+        long theaterId = fixtures.theater(cityId, "PVR Grand");
+        long audi1 = fixtures.screen(theaterId, "Audi 1");
+        fixtures.screen(theaterId, "Audi 2");
 
         mvc.perform(asAdmin(put("/api/v1/admin/screens/{id}", audi1)).content(screenJson("IMAX")))
                 .andExpect(status().isOk())
@@ -54,23 +52,20 @@ class TheaterApiIT {
 
     @Test
     void theaterNamesAreUniquePerCity() throws Exception {
-        createTheater(cityId, "Inox");
+        fixtures.theater(cityId, "Inox");
 
         mvc.perform(asAdmin(post("/api/v1/admin/theaters")).content(theaterJson(cityId, "INOX")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("ALREADY_EXISTS"));
 
-        long otherCity = create("/api/v1/admin/cities", """
-                {"name": "%s"}
-                """.formatted(uniqueName("Kochi")));
-        createTheater(otherCity, "Inox");
+        fixtures.theater(fixtures.city(), "Inox");
     }
 
     @Test
     void screenNamesAreUniquePerTheater() throws Exception {
-        long theaterId = createTheater(cityId, "Sathyam");
-        long audi1 = addScreen(theaterId, "Audi 1");
-        addScreen(theaterId, "Audi 2");
+        long theaterId = fixtures.theater(cityId, "Sathyam");
+        long audi1 = fixtures.screen(theaterId, "Audi 1");
+        fixtures.screen(theaterId, "Audi 2");
 
         mvc.perform(asAdmin(post("/api/v1/admin/theaters/{id}/screens", theaterId)).content(screenJson("audi 1")))
                 .andExpect(status().isConflict());
@@ -91,8 +86,8 @@ class TheaterApiIT {
 
     @Test
     void noNewScreensOnAnInactiveTheater() throws Exception {
-        long theaterId = createTheater(cityId, "Old Talkies");
-        long screenId = addScreen(theaterId, "Main");
+        long theaterId = fixtures.theater(cityId, "Old Talkies");
+        long screenId = fixtures.screen(theaterId, "Main");
 
         mvc.perform(asAdmin(post("/api/v1/admin/screens/{id}/deactivate", screenId)))
                 .andExpect(status().isNoContent());
@@ -112,20 +107,6 @@ class TheaterApiIT {
         mvc.perform(asAdmin(put("/api/v1/admin/screens/{id}", Long.MAX_VALUE)).content(screenJson("X")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Screen " + Long.MAX_VALUE + " not found"));
-    }
-
-    private long createTheater(long cityId, String name) throws Exception {
-        return create("/api/v1/admin/theaters", theaterJson(cityId, name));
-    }
-
-    private long addScreen(long theaterId, String name) throws Exception {
-        return create("/api/v1/admin/theaters/" + theaterId + "/screens", screenJson(name));
-    }
-
-    private long create(String path, String json) throws Exception {
-        return idOf(mvc.perform(asAdmin(post(path)).content(json))
-                .andExpect(status().isCreated())
-                .andReturn());
     }
 
     private static String theaterJson(long cityId, String name) {
