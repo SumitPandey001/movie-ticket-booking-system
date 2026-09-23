@@ -41,6 +41,7 @@ booking:
   max-seats-per-booking: 10
   convenience-fee-paise: 2000     # ₹20 per seat
   gst-percent: 18
+  idempotency-retention: PT24H
 
 ---
 spring:
