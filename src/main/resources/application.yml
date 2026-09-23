@@ -48,6 +48,7 @@ booking:
     seat-counter-ttl: PT10M
   hold-duration: PT8M
   payment-window: PT5M
+  cancellation-cutoff: PT30M
   max-seats-per-booking: 10
   convenience-fee-paise: 2000     # ₹20 per seat
   gst-percent: 18

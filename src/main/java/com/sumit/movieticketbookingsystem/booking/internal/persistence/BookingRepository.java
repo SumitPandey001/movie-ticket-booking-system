@@ -3,8 +3,11 @@ package com.sumit.movieticketbookingsystem.booking.internal.persistence;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -23,6 +26,20 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
                 .filter(booking -> booking.getUserId().equals(userId))
                 .orElseThrow(() -> new NotFoundException("Booking", bookingId));
     }
+
+    /**
+     * Like {@link #findOwn}, but locks the row until the transaction ends, so two changes to the same booking
+     * (a double-clicked cancel, a customer cancelling while the show is being cancelled) run one after the other.
+     */
+    default Booking findOwnForUpdate(UUID bookingId, UUID userId) {
+        return findByIdForUpdate(bookingId)
+                .filter(booking -> booking.getUserId().equals(userId))
+                .orElseThrow(() -> new NotFoundException("Booking", bookingId));
+    }
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Booking b WHERE b.id = :id")
+    Optional<Booking> findByIdForUpdate(UUID id);
 
     /** At most one, thanks to booking_one_active_hold. */
     Optional<Booking> findByUserIdAndShowIdAndStatusIn(UUID userId, long showId, Collection<BookingStatus> statuses);

@@ -108,6 +108,19 @@ class SeatInventoryRepository {
                 .update();
     }
 
+    int releaseBooked(long showId, Set<Long> seatIds, UUID bookingId) {
+        return jdbc.sql("""
+                        UPDATE show_seat
+                        SET status = 'AVAILABLE', booking_id = NULL, version = version + 1
+                        WHERE show_id = :showId AND layout_seat_id IN (:seatIds) AND booking_id = :bookingId
+                          AND status = 'BOOKED'
+                        """)
+                .param("showId", showId)
+                .param("seatIds", seatIds)
+                .param("bookingId", bookingId)
+                .update();
+    }
+
     /** Seats left per show, counting holds that ran out before {@code now} as available. */
     Map<Long, Integer> availableCounts(Collection<Long> showIds, Instant now) {
         Map<Long, Integer> counts = new HashMap<>();

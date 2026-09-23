@@ -1,0 +1,1 @@
+Booking [(${bookingRef})]: seats [(${seats})] cancelled.[# th:if="${refund != ''}"] Refund of [(${refund})] started.[/]

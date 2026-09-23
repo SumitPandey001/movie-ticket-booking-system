@@ -5,6 +5,7 @@ import java.util.Locale;
 enum NotificationType {
 
     BOOKING_CONFIRMED("Your tickets are confirmed · %s"),
+    BOOKING_CANCELLED("Booking %s cancelled"),
     REFUND_COMPLETED("Your refund for %s is on its way");
 
     private final String subject;
