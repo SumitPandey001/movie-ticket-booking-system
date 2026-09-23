@@ -4,6 +4,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  web:
+    resources:
+      # JSON API only; without this, unknown paths go to the static resource handler and skip our error advice
+      add-mappings: false
   jpa:
     open-in-view: false
     hibernate:
