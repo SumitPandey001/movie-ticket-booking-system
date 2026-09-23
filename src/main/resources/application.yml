@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: local
   application:
     name: movie-ticket-booking-system
   threads:
@@ -19,6 +17,10 @@ spring:
   mail:
     host: localhost
     port: 1025                                  # Mailpit; every email shows up at http://localhost:8025
+  datasource:                                   # docker-compose's database; override with env vars
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/moviebooking}
+    username: ${DB_USERNAME:moviebooking}
+    password: ${DB_PASSWORD:moviebooking}
   jpa:
     open-in-view: false
     hibernate:
@@ -63,12 +65,4 @@ booking:
     net-banking-banks: [HDFC, ICICI, SBI, AXIS, KOTAK]
     wallets: [PAYTM, PHONEPE, AMAZONPAY]
 
----
-spring:
-  config:
-    activate:
-      on-profile: local
-  datasource:
-    url: jdbc:postgresql://localhost:5432/moviebooking
-    username: postgres
-    password: alex@123
+

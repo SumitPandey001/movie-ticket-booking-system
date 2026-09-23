@@ -87,7 +87,8 @@ class ShowSeatIT {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         List<Number> unchanged = JsonPath.read(blocked, "$.unchangedSeatIds");
-        assertThat(unchanged).map(Number::longValue).containsExactlyInAnyOrder(a4, Long.MAX_VALUE);   // A4: already blocked
+        // A4 was already blocked
+        assertThat(unchanged).map(Number::longValue).containsExactlyInAnyOrder(a4, Long.MAX_VALUE);
         assertThat(statusOf("A1")).isEqualTo("BLOCKED");
 
         mvc.perform(asAdmin(post("/api/v1/admin/shows/{id}/seats/unblock", showId)).content("""

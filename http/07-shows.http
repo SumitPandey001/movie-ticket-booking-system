@@ -1,0 +1,60 @@
+# Needs {{screenId}} with an active layout (layouts.http) and {{movieId}} (movies.http).
+
+### Schedule a show
+POST {{baseUrl}}/api/v1/admin/shows
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"movieId": {{movieId}}, "screenId": {{screenId}}, "startTime": "2026-10-03T18:15:00+05:30",
+ "language": "HI", "format": "2D", "priceOverrides": {"PREMIUM": 32000}}
+
+> {% client.global.set("showId", response.body.id); client.global.set("theaterId", response.body.theaterId); %}
+
+### Overlapping show on the same screen -> 409 SHOW_OVERLAP
+POST {{baseUrl}}/api/v1/admin/shows
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"movieId": {{movieId}}, "screenId": {{screenId}}, "startTime": "2026-10-03T20:00:00+05:30",
+ "language": "HI", "format": "2D"}
+
+### Open it for sale
+POST {{baseUrl}}/api/v1/admin/shows/{{showId}}/open
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### A theater's shows for a date
+GET {{baseUrl}}/api/v1/admin/shows?theaterId={{theaterId}}&date=2026-10-03
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### Change prices for this show only
+PUT {{baseUrl}}/api/v1/admin/shows/{{showId}}/prices
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"prices": {"REGULAR": 28000}}
+
+### Block seats for this show (seat ids come from GET /screens/{id}/layouts)
+POST {{baseUrl}}/api/v1/admin/shows/{{showId}}/seats/block
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"seatIds": [1, 2]}
+
+### Unblock them
+POST {{baseUrl}}/api/v1/admin/shows/{{showId}}/seats/unblock
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"seatIds": [1, 2]}
+
+### Cancel it
+POST {{baseUrl}}/api/v1/admin/shows/{{showId}}/cancel
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN

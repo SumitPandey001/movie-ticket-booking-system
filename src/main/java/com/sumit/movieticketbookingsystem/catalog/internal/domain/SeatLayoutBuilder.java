@@ -88,7 +88,8 @@ public final class SeatLayoutBuilder {
                     case Seats run -> {
                         for (int number = run.from(); number <= run.to(); number++) {
                             SeatRef ref = seatRef(row.label, number);
-                            LayoutPlan.Seat seat = new LayoutPlan.Seat(ref, i + 1, col++, run.categoryCode(), typeOf(ref));
+                            LayoutPlan.Seat seat =
+                                    new LayoutPlan.Seat(ref, i + 1, col++, run.categoryCode(), typeOf(ref));
                             if (seats.putIfAbsent(ref, seat) != null) {
                                 throw new ValidationException("Seat " + ref.label() + " appears more than once");
                             }

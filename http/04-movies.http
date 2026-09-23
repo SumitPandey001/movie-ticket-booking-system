@@ -1,0 +1,27 @@
+### Create a movie (admin)
+POST {{baseUrl}}/api/v1/admin/movies
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"title": "Kalki 2898 AD", "durationMin": 181, "certification": "UA", "releaseDate": "2024-06-27"}
+
+> {% client.global.set("movieId", response.body.id); %}
+
+### Update it
+PUT {{baseUrl}}/api/v1/admin/movies/{{movieId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"title": "Kalki 2898 AD", "durationMin": 176, "certification": "UA", "releaseDate": "2024-06-27"}
+
+### Movie details (customer)
+GET {{baseUrl}}/api/v1/movies/{{movieId}}
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+
+### Deactivate it
+POST {{baseUrl}}/api/v1/admin/movies/{{movieId}}/deactivate
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN

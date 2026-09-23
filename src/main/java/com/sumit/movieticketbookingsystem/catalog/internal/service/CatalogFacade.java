@@ -53,7 +53,8 @@ class CatalogFacade implements CatalogApi {
 
     @Override
     public ScreenInfo screen(long screenId) {
-        Theater theater = theaters.findByScreenId(screenId).orElseThrow(() -> new NotFoundException("Screen", screenId));
+        Theater theater = theaters.findByScreenId(screenId)
+                .orElseThrow(() -> new NotFoundException("Screen", screenId));
         Screen screen = theater.screen(screenId);
         boolean active = screen.isActive() && theater.isActive() && findCity(theater.getCityId()).isActive();
         Long activeLayoutId = layouts.findByScreenIdAndStatus(screenId, LayoutStatus.ACTIVE)
@@ -64,7 +65,8 @@ class CatalogFacade implements CatalogApi {
 
     @Override
     public LayoutView layout(long layoutId) {
-        SeatLayout layout = layouts.findById(layoutId).orElseThrow(() -> new NotFoundException("Seat layout", layoutId));
+        SeatLayout layout = layouts.findById(layoutId)
+                .orElseThrow(() -> new NotFoundException("Seat layout", layoutId));
         List<LayoutView.Seat> seats = layout.getSeats().stream()
                 .map(seat -> new LayoutView.Seat(seat.getId(), seat.getLabel(), seat.getCategory().getId(),
                         seat.getGridRow(), seat.getGridCol(), seat.getSeatType().name()))

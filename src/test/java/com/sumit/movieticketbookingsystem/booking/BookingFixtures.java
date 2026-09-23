@@ -18,7 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Shows ready to book: scheduled on a weekday at least two days out on a fresh screen with A1-A5 regular (₹200) and B1-B5 premium (₹300).
+ * Shows ready to book: scheduled on a weekday at least two days out on a fresh screen with A1-A5 regular (₹200)
+ * and B1-B5 premium (₹300).
  */
 public class BookingFixtures {
 

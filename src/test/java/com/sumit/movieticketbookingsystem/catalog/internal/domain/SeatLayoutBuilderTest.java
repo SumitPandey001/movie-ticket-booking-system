@@ -19,9 +19,11 @@ class SeatLayoutBuilderTest {
 
         assertThat(plan.gridRows()).isEqualTo(2);
         assertThat(plan.gridCols()).isEqualTo(10);
-        assertThat(seat(plan, "A4")).extracting(LayoutPlan.Seat::gridRow, LayoutPlan.Seat::gridCol).containsExactly(1, 4);
+        assertThat(seat(plan, "A4")).extracting(LayoutPlan.Seat::gridRow, LayoutPlan.Seat::gridCol)
+                .containsExactly(1, 4);
         assertThat(seat(plan, "A5").gridCol()).isEqualTo(7);   // columns 5 and 6 are the aisle
-        assertThat(seat(plan, "B1")).extracting(LayoutPlan.Seat::gridRow, LayoutPlan.Seat::gridCol).containsExactly(2, 2);
+        assertThat(seat(plan, "B1")).extracting(LayoutPlan.Seat::gridRow, LayoutPlan.Seat::gridCol)
+                .containsExactly(2, 2);
         assertThat(seat(plan, "B1").categoryCode()).isEqualTo("PREMIUM");
         assertThat(plan.seats()).hasSize(11);
     }

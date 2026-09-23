@@ -121,8 +121,8 @@ class ShowPricingIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Theater " + bareTheater + " has no price for REGULAR seats"));
         // and nothing was left behind by the failed attempt
-        assertThat(jdbc.sql("SELECT count(*) FROM show WHERE screen_id = ?").param(bareScreen).query(Long.class).single())
-                .isZero();
+        assertThat(jdbc.sql("SELECT count(*) FROM show WHERE screen_id = ?")
+                .param(bareScreen).query(Long.class).single()).isZero();
     }
 
     @Test

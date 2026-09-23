@@ -30,7 +30,9 @@ class PriceRepository {
     /** Price in paise by category id. */
     Map<Long, Long> theaterPrices(long theaterId) {
         Map<Long, Long> prices = new LinkedHashMap<>();
-        jdbc.sql("SELECT category_id, price_paise FROM theater_category_price WHERE theater_id = ? ORDER BY category_id")
+        jdbc.sql("""
+                        SELECT category_id, price_paise FROM theater_category_price
+                        WHERE theater_id = ? ORDER BY category_id""")
                 .param(theaterId)
                 .query(rs -> {
                     prices.put(rs.getLong("category_id"), rs.getLong("price_paise"));

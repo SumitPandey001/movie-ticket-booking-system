@@ -90,7 +90,8 @@ class HoldApiIT {
     @Test
     void oneLiveHoldPerCustomerAndShow() throws Exception {
         UUID customer = UUID.randomUUID();
-        String first = hold(customer, "B2").andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String first = hold(customer, "B2").andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
 
         hold(customer, "B3")
                 .andExpect(status().isConflict())
@@ -154,8 +155,10 @@ class HoldApiIT {
 
     private ResultActions hold(UUID customer, String... labels) throws Exception {
         List<Long> ids = Arrays.stream(labels).map(seats::get).toList();
-        return mvc.perform(asCustomer(post("/api/v1/bookings"), customer).header("Idempotency-Key", UUID.randomUUID()).content("""
-                {"showId": %d, "seatIds": %s}
-                """.formatted(showId, ids)));
+        return mvc.perform(asCustomer(post("/api/v1/bookings"), customer)
+                .header("Idempotency-Key", UUID.randomUUID())
+                .content("""
+                        {"showId": %d, "seatIds": %s}
+                        """.formatted(showId, ids)));
     }
 }
