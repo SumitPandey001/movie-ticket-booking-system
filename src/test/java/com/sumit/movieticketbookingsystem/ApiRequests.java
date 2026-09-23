@@ -24,9 +24,14 @@ public final class ApiRequests {
                 .header("X-User-Role", "ADMIN");
     }
 
+    /** A customer nobody has seen before. */
     public static MockHttpServletRequestBuilder asCustomer(MockHttpServletRequestBuilder request) {
+        return asCustomer(request, UUID.randomUUID());
+    }
+
+    public static MockHttpServletRequestBuilder asCustomer(MockHttpServletRequestBuilder request, UUID userId) {
         return request.contentType(MediaType.APPLICATION_JSON)
-                .header("X-User-Id", UUID.randomUUID())
+                .header("X-User-Id", userId)
                 .header("X-User-Role", "CUSTOMER");
     }
 

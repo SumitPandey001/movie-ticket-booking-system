@@ -16,6 +16,8 @@ public enum ErrorCode {
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid state"),
     SHOW_OVERLAP(HttpStatus.CONFLICT, "Show overlaps another show"),
     SEATS_UNAVAILABLE(HttpStatus.CONFLICT, "Seats unavailable"),
+    ACTIVE_HOLD_EXISTS(HttpStatus.CONFLICT, "Active hold exists"),
+    SHOW_NOT_BOOKABLE(HttpStatus.UNPROCESSABLE_CONTENT, "Show not bookable"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
 
     private final HttpStatus status;

@@ -37,6 +37,10 @@ booking:
   cache:
     show-day-ttl: PT60S
     seat-counter-ttl: PT10M
+  hold-duration: PT8M
+  max-seats-per-booking: 10
+  convenience-fee-paise: 2000     # ₹20 per seat
+  gst-percent: 18
 
 ---
 spring:

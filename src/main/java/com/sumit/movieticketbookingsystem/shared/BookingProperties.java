@@ -22,6 +22,10 @@ import java.util.Map;
  * @param fillingFastPercent a show is "filling fast" below this share of seats left
  * @param slots              time-of-day filters by name; a {@code to} earlier than {@code from} ends the next day
  * @param cache              how long Redis keeps the browse cache and the seats-left counters
+ * @param holdDuration       how long held seats stay reserved while the customer pays
+ * @param maxSeatsPerBooking most seats one booking may hold
+ * @param convenienceFeePaise flat fee per seat
+ * @param gstPercent         GST on tickets (after discount) and on the convenience fee
  */
 @Validated
 @ConfigurationProperties("booking")
@@ -32,7 +36,11 @@ public record BookingProperties(
         @Min(1) @Max(31) int dateStripDays,
         @Min(1) @Max(100) int fillingFastPercent,
         @NotEmpty Map<String, @Valid Slot> slots,
-        @NotNull @Valid Cache cache) {
+        @NotNull @Valid Cache cache,
+        @NotNull Duration holdDuration,
+        @Min(1) @Max(50) int maxSeatsPerBooking,
+        @Min(0) long convenienceFeePaise,
+        @Min(0) @Max(100) int gstPercent) {
 
     public record Slot(@NotNull LocalTime from, @NotNull LocalTime to) {
     }
