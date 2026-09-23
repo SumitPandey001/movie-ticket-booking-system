@@ -2,15 +2,18 @@ package com.sumit.movieticketbookingsystem.inventory.internal;
 
 import com.sumit.movieticketbookingsystem.catalog.LayoutView;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
+import com.sumit.movieticketbookingsystem.inventory.SeatAvailabilityReader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Service
 @Transactional
-class InventoryFacade implements InventoryApi {
+class InventoryFacade implements InventoryApi, SeatAvailabilityReader {
 
     private final SeatInventoryRepository seats;
 
@@ -31,6 +34,12 @@ class InventoryFacade implements InventoryApi {
     @Override
     public Set<Long> unblock(long showId, Set<Long> seatIds) {
         return unchanged(seatIds, seats.changeStatus(showId, seatIds, "BLOCKED", "AVAILABLE"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, Integer> seatsLeft(Collection<Long> showIds) {
+        return seats.availableCounts(showIds);
     }
 
     private static Set<Long> unchanged(Set<Long> requested, Iterable<Long> changed) {

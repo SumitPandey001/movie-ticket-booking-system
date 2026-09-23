@@ -5,7 +5,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Repository
@@ -28,6 +31,22 @@ class SeatInventoryRepository {
                         .map(seat -> new Object[] {showId, seat.layoutSeatId(), seat.label(), seat.categoryId(),
                                 seat.blocked() ? "BLOCKED" : "AVAILABLE"})
                         .toList());
+    }
+
+    Map<Long, Integer> availableCounts(Collection<Long> showIds) {
+        Map<Long, Integer> counts = new HashMap<>();
+        if (showIds.isEmpty()) {
+            return counts;
+        }
+        jdbc.sql("""
+                        SELECT show_id, count(*) FILTER (WHERE status = 'AVAILABLE') AS available
+                        FROM show_seat WHERE show_id IN (:showIds) GROUP BY show_id
+                        """)
+                .param("showIds", showIds)
+                .query(rs -> {
+                    counts.put(rs.getLong("show_id"), rs.getInt("available"));
+                });
+        return counts;
     }
 
     /** Moves the given seats from one status to another and returns the ids that actually changed. */

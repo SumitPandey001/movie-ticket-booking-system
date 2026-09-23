@@ -24,6 +24,14 @@ logging:
 booking:
   cleaning-buffer: PT20M
   late-night-cutoff: "03:00"
+  booking-cutoff: PT10M
+  date-strip-days: 7
+  filling-fast-percent: 20
+  slots:
+    MORNING:   { from: "03:00", to: "12:00" }
+    AFTERNOON: { from: "12:00", to: "16:00" }
+    EVENING:   { from: "16:00", to: "20:00" }
+    NIGHT:     { from: "20:00", to: "03:00" }   # ends next day, so it includes the late-night shows
 
 ---
 spring:

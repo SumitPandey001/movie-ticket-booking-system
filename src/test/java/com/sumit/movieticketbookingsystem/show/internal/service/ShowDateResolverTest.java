@@ -1,14 +1,12 @@
 package com.sumit.movieticketbookingsystem.show.internal.service;
 
-import com.sumit.movieticketbookingsystem.shared.BookingProperties;
+import com.sumit.movieticketbookingsystem.shared.TestBookingProperties;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,8 +16,7 @@ class ShowDateResolverTest {
 
     private static final ZoneId KOLKATA = ZoneId.of("Asia/Kolkata");
 
-    private final ShowDateResolver resolver =
-            new ShowDateResolver(new BookingProperties(Duration.ofMinutes(20), LocalTime.of(3, 0)));
+    private final ShowDateResolver resolver = new ShowDateResolver(TestBookingProperties.defaults());
 
     @Test
     void eveningShowIsListedOnItsOwnDate() {
