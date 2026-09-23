@@ -69,6 +69,34 @@ class SeatInventoryRepository {
                 .list();
     }
 
+    /** Returns the seats that became BOOKED, with the status each had. */
+    List<ClaimedSeat> confirm(long showId, Set<Long> seatIds, UUID bookingId, Instant now) {
+        return jdbc.sql("""
+                        WITH requested AS (
+                            SELECT show_id, layout_seat_id, status, booking_id, hold_expires_at
+                            FROM show_seat
+                            WHERE show_id = :showId AND layout_seat_id IN (:seatIds)
+                            ORDER BY layout_seat_id
+                            FOR UPDATE
+                        )
+                        UPDATE show_seat s
+                        SET status = 'BOOKED', booking_id = :bookingId, hold_expires_at = NULL, version = s.version + 1
+                        FROM requested r
+                        WHERE s.show_id = r.show_id AND s.layout_seat_id = r.layout_seat_id
+                          AND (   (r.status = 'HELD' AND r.booking_id = :bookingId)
+                               OR  r.status = 'AVAILABLE'
+                               OR (r.status = 'HELD' AND r.hold_expires_at < :now))
+                        RETURNING s.layout_seat_id, s.seat_label, s.category_id, r.status AS previous_status
+                        """)
+                .param("showId", showId)
+                .param("seatIds", seatIds)
+                .param("bookingId", bookingId)
+                .param("now", utc(now))
+                .query((rs, row) -> new ClaimedSeat(rs.getLong("layout_seat_id"), rs.getString("seat_label"),
+                        rs.getLong("category_id"), SeatStatus.valueOf(rs.getString("previous_status"))))
+                .list();
+    }
+
     /** Frees the seats this booking still holds; seats already taken over by someone else are left alone. */
     int releaseHeld(long showId, UUID bookingId) {
         return jdbc.sql("""

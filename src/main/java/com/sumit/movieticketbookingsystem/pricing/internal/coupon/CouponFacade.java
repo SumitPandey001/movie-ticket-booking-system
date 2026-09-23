@@ -34,6 +34,11 @@ class CouponFacade implements CouponApi {
     }
 
     @Override
+    public void consume(UUID bookingId) {
+        redemptions.consume(bookingId);
+    }
+
+    @Override
     public void release(UUID bookingId) {
         redemptions.releaseLive(bookingId).ifPresent(redemptions::giveBack);
     }

@@ -66,6 +66,35 @@ class BookingTest {
     }
 
     @Test
+    void startingPaymentKeepsTheSeatsForThePaymentWindowButNeverShortensTheHold() {
+        Booking early = hold();                                   // hold runs until NOW + 8 min
+        early.startPayment(NOW, Duration.ofMinutes(5));
+        assertThat(early.getStatus()).isEqualTo(BookingStatus.PAYMENT_PENDING);
+        assertThat(early.getHoldExpiresAt()).isEqualTo(EXPIRES);
+
+        Booking late = hold();
+        late.startPayment(NOW.plus(Duration.ofMinutes(7)), Duration.ofMinutes(5));
+        assertThat(late.getHoldExpiresAt()).isEqualTo(NOW.plus(Duration.ofMinutes(12)));
+    }
+
+    @Test
+    void paymentEndsConfirmedOrFailed() {
+        Booking paid = hold();
+        paid.startPayment(NOW, Duration.ofMinutes(5));
+        paid.confirm(NOW.plusSeconds(30));
+        assertThat(paid.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(paid.getConfirmedAt()).isEqualTo(NOW.plusSeconds(30));
+
+        Booking declined = hold();
+        declined.startPayment(NOW, Duration.ofMinutes(5));
+        declined.fail(NOW.plusSeconds(30));
+        assertThat(declined.getStatus()).isEqualTo(BookingStatus.FAILED);
+        assertThat(declined.getClosedAt()).isEqualTo(NOW.plusSeconds(30));
+
+        assertThatThrownBy(() -> hold().confirm(NOW)).isInstanceOf(IllegalTransitionException.class);   // not paid
+    }
+
+    @Test
     void holdExpiresExactlyAtItsExpiryTime() {
         Booking booking = hold();
 

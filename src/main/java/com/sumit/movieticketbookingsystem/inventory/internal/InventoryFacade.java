@@ -60,7 +60,22 @@ class InventoryFacade implements InventoryApi {
         // a seat taken over from an expired hold was already counted as gone
         long wereAvailable = claimed.stream().filter(seat -> seat.previousStatus() == SeatStatus.AVAILABLE).count();
         availabilityChanged(showId, -Math.toIntExact(wereAvailable));
-        return claimed.stream().map(seat -> new HeldSeat(seat.layoutSeatId(), seat.label(), seat.categoryId())).toList();
+        return claimed.stream()
+                .map(seat -> new HeldSeat(seat.layoutSeatId(), seat.label(), seat.categoryId()))
+                .toList();
+    }
+
+    @Override
+    public void confirm(long showId, Set<Long> seatIds, UUID bookingId, Instant now) {
+        List<ClaimedSeat> booked = seats.confirm(showId, seatIds, bookingId, now);
+        if (booked.size() < seatIds.size()) {
+            Set<Long> lost = new HashSet<>(seatIds);
+            booked.forEach(seat -> lost.remove(seat.layoutSeatId()));
+            throw new SeatsUnavailableException(lost);   // rolls back the seats that were booked
+        }
+        // a seat that had become free again comes off the counter now; our own held seats already had
+        long wereAvailable = booked.stream().filter(seat -> seat.previousStatus() == SeatStatus.AVAILABLE).count();
+        availabilityChanged(showId, -Math.toIntExact(wereAvailable));
     }
 
     @Override

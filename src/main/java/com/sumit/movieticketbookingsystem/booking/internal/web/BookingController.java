@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.booking.internal.web;
 
+import com.sumit.movieticketbookingsystem.booking.internal.service.CheckoutService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService.CreateHold;
 import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
@@ -25,9 +26,11 @@ import java.util.UUID;
 class BookingController {
 
     private final HoldService holdService;
+    private final CheckoutService checkoutService;
 
-    BookingController(HoldService holdService) {
+    BookingController(HoldService holdService, CheckoutService checkoutService) {
         this.holdService = holdService;
+        this.checkoutService = checkoutService;
     }
 
     /** Holds seats; the response's holdExpiresAt drives the countdown in the client. */
@@ -50,6 +53,12 @@ class BookingController {
     }
 
     record CouponRequest(@NotBlank @Size(max = 30) String code) {
+    }
+
+    @PostMapping("/{id}/payments")
+    @Idempotent
+    CheckoutResponse pay(@PathVariable UUID id, @Valid @RequestBody PaymentRequest request, CurrentUser user) {
+        return CheckoutResponse.from(checkoutService.pay(id, user.id(), request.details(), request.outcome()));
     }
 
     @PostMapping("/{id}/release")

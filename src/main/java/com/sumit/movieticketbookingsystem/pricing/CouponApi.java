@@ -14,6 +14,9 @@ public interface CouponApi {
      */
     void reserve(String code, UUID userId, UUID bookingId, long discountPaise);
 
+    /** Marks the booking's reserved coupon as used for good, once the booking is paid. No-op without a coupon. */
+    void consume(UUID bookingId);
+
     /** Gives the booking's coupon use back, if it has one. */
     void release(UUID bookingId);
 }
