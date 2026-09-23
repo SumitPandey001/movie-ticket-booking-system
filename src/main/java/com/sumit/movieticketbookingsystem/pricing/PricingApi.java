@@ -6,27 +6,28 @@ import java.util.Set;
 
 /**
  * Category prices per show. Prices are copied onto the show when it's created, so later changes to a theater's
- * defaults never touch shows already scheduled. Amounts are in paise; category codes are e.g. "PREMIUM".
+ * defaults never touch shows already scheduled. Day-of-week rules are applied on top whenever a price is shown
+ * or quoted. Amounts are in paise; category codes are e.g. "PREMIUM".
  */
 public interface PricingApi {
 
     /**
      * Gives the show a price for each of its seat categories: the theater's default, or the admin's override.
      *
-     * @return the lowest of those prices, for "from ₹..." on the browse page
+     * @return the lowest price including the day's surcharge, for "from ₹..." on the browse page
      */
-    long initializeShowPrices(long showId, long theaterId, Set<Long> categoryIds, Map<String, Long> overrides);
+    long initializeShowPrices(ShowPricing show, Set<Long> categoryIds, Map<String, Long> overrides);
 
     /**
      * Changes some of the show's category prices.
      *
-     * @return the show's new lowest price
+     * @return the show's new lowest price including the day's surcharge
      */
-    long overrideShowPrices(long showId, Map<String, Long> prices);
+    long overrideShowPrices(ShowPricing show, Map<String, Long> prices);
 
-    /** The show's price per seat category, by category id. */
-    Map<Long, Long> showPrices(long showId);
+    /** Price per seat category (by category id) as the customer sees it: tier plus the day's surcharge. */
+    Map<Long, Long> displayPrices(ShowPricing show);
 
-    /** Prices the given seats of the show: tier price, convenience fee and GST, one line per seat. */
-    PriceQuote quote(long showId, List<SeatToPrice> seats);
+    /** Prices the given seats: tier, day surcharge, convenience fee and GST, one line per seat. */
+    PriceQuote quote(ShowPricing show, List<SeatToPrice> seats);
 }

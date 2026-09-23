@@ -48,7 +48,7 @@ public class SeatMapService {
 
         LayoutView layout = catalog.layout(show.getLayoutId());
         Map<Long, SeatStatus> statuses = inventory.seatStatuses(showId, Instant.now(clock));
-        Map<Long, Long> prices = pricing.showPrices(showId);
+        Map<Long, Long> prices = pricing.displayPrices(ShowPricings.of(show));
 
         List<Category> categories = catalog.seatCategories().stream()
                 .filter(category -> prices.containsKey(category.categoryId()))
@@ -67,7 +67,7 @@ public class SeatMapService {
                           List<Seat> seats) {
     }
 
-    /** {@code pricePaise} is the tier price; fees and GST are added when seats are held. */
+    /** {@code pricePaise} includes the day's surcharge; fees and GST are added when seats are held. */
     public record Category(long id, String code, String name, long pricePaise) {
     }
 

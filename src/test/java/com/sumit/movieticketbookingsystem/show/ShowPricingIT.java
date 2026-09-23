@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.show;
 
 import com.sumit.movieticketbookingsystem.TestcontainersConfiguration;
 import com.sumit.movieticketbookingsystem.catalog.CatalogFixtures;
+import com.sumit.movieticketbookingsystem.TestDates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,6 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -51,7 +51,7 @@ class ShowPricingIT {
         screenId = catalog.screenWithActiveLayout();
         theaterId = jdbc.sql("SELECT theater_id FROM screen WHERE id = ?").param(screenId).query(Long.class).single();
         movieId = catalog.movie(120);
-        start = OffsetDateTime.now(ZoneOffset.ofHoursMinutes(5, 30)).plusDays(4).truncatedTo(ChronoUnit.DAYS).withHour(15);
+        start = TestDates.weekday(4).atTime(15, 0).atOffset(ZoneOffset.ofHoursMinutes(5, 30));
     }
 
     @Test

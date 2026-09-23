@@ -21,7 +21,7 @@ class GstRule implements PricingRule {
     @Override
     public void apply(PricingContext context) {
         for (PricingContext.Line line : context.lines()) {
-            line.ticketTax = Money.ofPaise(line.tier - line.discount).percent(gstPercent).paise();
+            line.ticketTax = Money.ofPaise(line.base() - line.discount).percent(gstPercent).paise();
             line.feeTax = Money.ofPaise(line.fee).percent(gstPercent).paise();
         }
     }

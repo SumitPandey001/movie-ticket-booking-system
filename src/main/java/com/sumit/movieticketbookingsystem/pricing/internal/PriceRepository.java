@@ -67,11 +67,4 @@ class PriceRepository {
                 .params(pricePaise, showId, categoryId)
                 .update() == 1;
     }
-
-    long lowestShowPrice(long showId) {
-        return jdbc.sql("SELECT min(price_paise) FROM show_category_price WHERE show_id = ?")
-                .param(showId)
-                .query(Long.class)
-                .single();
-    }
 }
