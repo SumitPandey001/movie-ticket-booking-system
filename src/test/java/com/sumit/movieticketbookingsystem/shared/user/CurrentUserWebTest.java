@@ -12,7 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest
+// Only the echo controller is loaded; it needs the explicit import because Boot never scans classes nested in tests.
+@WebMvcTest(CurrentUserWebTest.EchoController.class)
 @Import(CurrentUserWebTest.EchoController.class)
 class CurrentUserWebTest {
 
