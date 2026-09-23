@@ -91,7 +91,8 @@ class BrowseCacheIT {
         mvc.perform(asAdmin(post("/api/v1/admin/shows/{id}/seats/block", showId))
                         .content("{\"seatIds\": [" + seats.get(3) + "]}"))
                 .andExpect(status().isOk());
-        showtimes().andExpect(jsonPath("$.theaters[0].shows[0].seatsLeft").value(6));       // rebuilt: 10 - 3 - 1
+        // adjusted by -1, not rebuilt, so the three seats changed behind its back still aren't counted
+        showtimes().andExpect(jsonPath("$.theaters[0].shows[0].seatsLeft").value(9));
     }
 
     @Test

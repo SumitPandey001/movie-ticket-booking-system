@@ -15,6 +15,7 @@ public enum ErrorCode {
     ALREADY_EXISTS(HttpStatus.CONFLICT, "Already exists"),
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid state"),
     SHOW_OVERLAP(HttpStatus.CONFLICT, "Show overlaps another show"),
+    SEATS_UNAVAILABLE(HttpStatus.CONFLICT, "Seats unavailable"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
 
     private final HttpStatus status;

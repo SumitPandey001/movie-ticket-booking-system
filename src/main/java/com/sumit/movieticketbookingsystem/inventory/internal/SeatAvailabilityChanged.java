@@ -1,7 +1,7 @@
 package com.sumit.movieticketbookingsystem.inventory.internal;
 
 /**
- * Some seats of the show changed between available and not; its seats-left counter is out of date.
+ * The number of available seats of a show went up or down by {@code delta}.
  */
-record SeatAvailabilityChanged(long showId) {
+record SeatAvailabilityChanged(long showId, int delta) {
 }

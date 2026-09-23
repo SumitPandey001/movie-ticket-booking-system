@@ -12,12 +12,14 @@ import com.sumit.movieticketbookingsystem.show.internal.persistence.ShowReposito
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 /**
  * The seat picker for one show: layout grid (catalog) + live seat statuses (inventory) + prices (pricing).
- * Never cached; statuses always come straight from the database.
+ * Never cached; statuses always come straight from the database, with lapsed holds shown as available.
  */
 @Service
 @Transactional(readOnly = true)
@@ -27,12 +29,15 @@ public class SeatMapService {
     private final CatalogApi catalog;
     private final InventoryApi inventory;
     private final PricingApi pricing;
+    private final Clock clock;
 
-    SeatMapService(ShowRepository shows, CatalogApi catalog, InventoryApi inventory, PricingApi pricing) {
+    SeatMapService(ShowRepository shows, CatalogApi catalog, InventoryApi inventory, PricingApi pricing,
+            Clock clock) {
         this.shows = shows;
         this.catalog = catalog;
         this.inventory = inventory;
         this.pricing = pricing;
+        this.clock = clock;
     }
 
     /** Only open shows have a public seat map; anything else is reported as not found. */
@@ -42,7 +47,7 @@ public class SeatMapService {
                 .orElseThrow(() -> new NotFoundException("Show", showId));
 
         LayoutView layout = catalog.layout(show.getLayoutId());
-        Map<Long, SeatStatus> statuses = inventory.seatStatuses(showId);
+        Map<Long, SeatStatus> statuses = inventory.seatStatuses(showId, Instant.now(clock));
         Map<Long, Long> prices = pricing.showPrices(showId);
 
         List<Category> categories = catalog.seatCategories().stream()
