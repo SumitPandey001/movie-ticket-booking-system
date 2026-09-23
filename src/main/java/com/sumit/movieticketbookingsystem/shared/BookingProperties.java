@@ -21,6 +21,7 @@ import java.util.Map;
  * @param dateStripDays      how many days ahead customers can browse, today included
  * @param fillingFastPercent a show is "filling fast" below this share of seats left
  * @param slots              time-of-day filters by name; a {@code to} earlier than {@code from} ends the next day
+ * @param cache              how long Redis keeps the browse cache and the seats-left counters
  */
 @Validated
 @ConfigurationProperties("booking")
@@ -30,8 +31,12 @@ public record BookingProperties(
         @NotNull Duration bookingCutoff,
         @Min(1) @Max(31) int dateStripDays,
         @Min(1) @Max(100) int fillingFastPercent,
-        @NotEmpty Map<String, @Valid Slot> slots) {
+        @NotEmpty Map<String, @Valid Slot> slots,
+        @NotNull @Valid Cache cache) {
 
     public record Slot(@NotNull LocalTime from, @NotNull LocalTime to) {
+    }
+
+    public record Cache(@NotNull Duration showDayTtl, @NotNull Duration seatCounterTtl) {
     }
 }

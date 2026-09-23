@@ -19,6 +19,7 @@ public final class TestBookingProperties {
                 Map.of("MORNING", new Slot(LocalTime.of(3, 0), LocalTime.of(12, 0)),
                         "AFTERNOON", new Slot(LocalTime.of(12, 0), LocalTime.of(16, 0)),
                         "EVENING", new Slot(LocalTime.of(16, 0), LocalTime.of(20, 0)),
-                        "NIGHT", new Slot(LocalTime.of(20, 0), LocalTime.of(3, 0))));
+                        "NIGHT", new Slot(LocalTime.of(20, 0), LocalTime.of(3, 0))),
+                new BookingProperties.Cache(Duration.ofSeconds(60), Duration.ofMinutes(10)));
     }
 }

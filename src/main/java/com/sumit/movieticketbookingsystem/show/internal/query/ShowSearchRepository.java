@@ -10,11 +10,11 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 /**
- * Read-only queries behind the browse pages. All of them are served by show_browse_idx.
+ * The browse queries against Postgres, all served by show_browse_idx.
  * Instants go to the driver as UTC OffsetDateTime, which it maps to timestamptz.
  */
 @Repository
-public class ShowSearchRepository {
+class ShowSearchRepository implements ShowQueryService {
 
     private final JdbcClient jdbc;
 
@@ -22,7 +22,7 @@ public class ShowSearchRepository {
         this.jdbc = jdbc;
     }
 
-    /** Movies with at least one bookable show in the city between the two listing dates. */
+    @Override
     public List<Long> moviesShowing(long cityId, LocalDate from, LocalDate to, Instant bookableAfter) {
         return jdbc.sql("""
                         SELECT DISTINCT movie_id FROM show
@@ -37,6 +37,7 @@ public class ShowSearchRepository {
                 .list();
     }
 
+    @Override
     public List<LocalDate> dates(long cityId, long movieId, LocalDate from, LocalDate to, Instant bookableAfter) {
         return jdbc.sql("""
                         SELECT DISTINCT show_date FROM show
@@ -53,10 +54,7 @@ public class ShowSearchRepository {
                 .list();
     }
 
-    /**
-     * Every open show of a movie in a city for one listing date, unfiltered. Not filtered by time either,
-     * so the result stays valid all day (it's what gets cached later); callers apply the booking cutoff.
-     */
+    @Override
     public List<ShowRow> showsForDay(long cityId, long movieId, LocalDate date) {
         return jdbc.sql("""
                         SELECT id, theater_id, start_time, language, format, price_from_paise, total_seats
@@ -76,9 +74,5 @@ public class ShowSearchRepository {
                         rs.getObject("price_from_paise", Long.class),
                         rs.getInt("total_seats")))
                 .list();
-    }
-
-    public record ShowRow(long showId, long theaterId, Instant startTime, String language, String format,
-                          Long priceFromPaise, int totalSeats) {
     }
 }

@@ -13,6 +13,8 @@ import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import com.sumit.movieticketbookingsystem.shared.persistence.ConstraintViolations;
 import com.sumit.movieticketbookingsystem.show.internal.domain.Show;
 import com.sumit.movieticketbookingsystem.show.internal.persistence.ShowRepository;
+import com.sumit.movieticketbookingsystem.show.internal.query.ShowListingChanged;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,16 +37,19 @@ public class ShowAdminService {
     private final InventoryApi inventory;
     private final PricingApi pricing;
     private final ShowDateResolver showDateResolver;
+    private final ApplicationEventPublisher events;
     private final Duration cleaningBuffer;
     private final Clock clock;
 
     ShowAdminService(ShowRepository shows, CatalogApi catalog, InventoryApi inventory, PricingApi pricing,
-            ShowDateResolver showDateResolver, BookingProperties properties, Clock clock) {
+            ShowDateResolver showDateResolver, ApplicationEventPublisher events, BookingProperties properties,
+            Clock clock) {
         this.shows = shows;
         this.catalog = catalog;
         this.inventory = inventory;
         this.pricing = pricing;
         this.showDateResolver = showDateResolver;
+        this.events = events;
         this.cleaningBuffer = properties.cleaningBuffer();
         this.clock = clock;
     }
@@ -104,6 +109,7 @@ public class ShowAdminService {
     public Show overridePrices(long showId, Map<String, Long> prices) {
         Show show = find(showId);
         show.updatePriceFrom(pricing.overrideShowPrices(showId, prices));
+        listingChanged(show);
         return show;
     }
 
@@ -116,6 +122,7 @@ public class ShowAdminService {
     public Show open(long showId) {
         Show show = find(showId);
         show.open();
+        listingChanged(show);
         return show;
     }
 
@@ -123,6 +130,7 @@ public class ShowAdminService {
     public Show cancel(long showId) {
         Show show = find(showId);
         show.cancel();
+        listingChanged(show);
         return show;
     }
 
@@ -136,6 +144,11 @@ public class ShowAdminService {
     @Transactional
     public Set<Long> unblockSeats(long showId, Set<Long> seatIds) {
         return inventory.unblock(find(showId).getId(), seatIds);
+    }
+
+    // new shows aren't listed until they're opened, so creating one doesn't need this
+    private void listingChanged(Show show) {
+        events.publishEvent(new ShowListingChanged(show.getCityId(), show.getMovieId(), show.getShowDate()));
     }
 
     private Show find(long showId) {
