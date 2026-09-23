@@ -1,7 +1,7 @@
 package com.sumit.movieticketbookingsystem.pricing.internal;
 
+import com.sumit.movieticketbookingsystem.pricing.PricingRequest;
 import com.sumit.movieticketbookingsystem.pricing.SeatPriceLine;
-import com.sumit.movieticketbookingsystem.pricing.SeatToPrice;
 import com.sumit.movieticketbookingsystem.pricing.ShowPricing;
 
 import java.util.List;
@@ -11,17 +11,22 @@ import java.util.List;
  */
 final class PricingContext {
 
-    private final ShowPricing show;
+    private final PricingRequest request;
     private final List<Line> lines;
     private String dayRule;
+    private String coupon;
 
-    PricingContext(ShowPricing show, List<SeatToPrice> seats) {
-        this.show = show;
-        this.lines = seats.stream().map(seat -> new Line(seat.layoutSeatId(), seat.categoryId())).toList();
+    PricingContext(PricingRequest request) {
+        this.request = request;
+        this.lines = request.seats().stream().map(seat -> new Line(seat.layoutSeatId(), seat.categoryId())).toList();
     }
 
     ShowPricing show() {
-        return show;
+        return request.show();
+    }
+
+    PricingRequest request() {
+        return request;
     }
 
     List<Line> lines() {
@@ -34,6 +39,14 @@ final class PricingContext {
 
     void dayRule(String name) {
         this.dayRule = name;
+    }
+
+    String coupon() {
+        return coupon;
+    }
+
+    void coupon(String code) {
+        this.coupon = code;
     }
 
     static final class Line {

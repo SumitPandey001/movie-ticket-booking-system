@@ -7,5 +7,5 @@ import java.time.LocalDate;
  *
  * @param showDate the listing date, whose day of the week picks the day rule
  */
-public record ShowPricing(long showId, long cityId, long theaterId, LocalDate showDate) {
+public record ShowPricing(long showId, long movieId, long cityId, long theaterId, LocalDate showDate) {
 }

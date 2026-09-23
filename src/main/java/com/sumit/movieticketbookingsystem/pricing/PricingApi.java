@@ -1,6 +1,5 @@
 package com.sumit.movieticketbookingsystem.pricing;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +27,11 @@ public interface PricingApi {
     /** Price per seat category (by category id) as the customer sees it: tier plus the day's surcharge. */
     Map<Long, Long> displayPrices(ShowPricing show);
 
-    /** Prices the given seats: tier, day surcharge, convenience fee and GST, one line per seat. */
-    PriceQuote quote(ShowPricing show, List<SeatToPrice> seats);
+    /**
+     * Prices the given seats: tier, day surcharge, coupon discount, convenience fee and GST, one line per seat.
+     * Only checks the coupon; using it up is a separate step.
+     *
+     * @throws CouponInvalidException if a coupon code is given but can't be used for this order
+     */
+    PriceQuote quote(PricingRequest request);
 }

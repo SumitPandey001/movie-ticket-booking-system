@@ -10,6 +10,7 @@ import com.sumit.movieticketbookingsystem.inventory.HeldSeat;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
 import com.sumit.movieticketbookingsystem.pricing.PriceQuote;
 import com.sumit.movieticketbookingsystem.pricing.PricingApi;
+import com.sumit.movieticketbookingsystem.pricing.PricingRequest;
 import com.sumit.movieticketbookingsystem.pricing.SeatPriceLine;
 import com.sumit.movieticketbookingsystem.pricing.SeatToPrice;
 import com.sumit.movieticketbookingsystem.pricing.ShowPricing;
@@ -80,9 +81,11 @@ public class HoldService {
         UUID bookingId = UUID.randomUUID();
         List<HeldSeat> held = inventory.hold(show.showId(), command.seatIds(), bookingId,
                 now.plus(properties.holdDuration()), now);
-        PriceQuote quote = pricing.quote(
-                new ShowPricing(show.showId(), show.cityId(), show.theaterId(), show.showDate()),
-                held.stream().map(seat -> new SeatToPrice(seat.layoutSeatId(), seat.categoryId())).toList());
+        PriceQuote quote = pricing.quote(new PricingRequest(
+                new ShowPricing(show.showId(), show.movieId(), show.cityId(), show.theaterId(), show.showDate()),
+                command.userId(),
+                held.stream().map(seat -> new SeatToPrice(seat.layoutSeatId(), seat.categoryId())).toList(),
+                null));
 
         // ponytail: a booking_ref clash (1 in ~10^9 per hold) fails this hold with a 500; retry with a fresh
         // ref here if that ever shows up in the logs
