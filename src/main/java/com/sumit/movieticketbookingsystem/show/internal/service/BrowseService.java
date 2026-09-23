@@ -9,8 +9,8 @@ import com.sumit.movieticketbookingsystem.shared.BookingProperties;
 import com.sumit.movieticketbookingsystem.shared.TimeWindow;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.show.internal.domain.TimeSlot;
-import com.sumit.movieticketbookingsystem.show.internal.query.ShowSearchRepository;
-import com.sumit.movieticketbookingsystem.show.internal.query.ShowSearchRepository.ShowRow;
+import com.sumit.movieticketbookingsystem.show.internal.query.ShowQueryService;
+import com.sumit.movieticketbookingsystem.show.internal.query.ShowQueryService.ShowRow;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 @Transactional(readOnly = true)
 public class BrowseService {
 
-    private final ShowSearchRepository search;
+    private final ShowQueryService search;
     private final CatalogApi catalog;
     private final SeatAvailabilityReader availability;
     private final ShowDateResolver showDateResolver;
@@ -41,7 +41,7 @@ public class BrowseService {
     private final BookingProperties properties;
     private final Clock clock;
 
-    BrowseService(ShowSearchRepository search, CatalogApi catalog, SeatAvailabilityReader availability,
+    BrowseService(ShowQueryService search, CatalogApi catalog, SeatAvailabilityReader availability,
             ShowDateResolver showDateResolver, SlotResolver slotResolver, BookingProperties properties, Clock clock) {
         this.search = search;
         this.catalog = catalog;

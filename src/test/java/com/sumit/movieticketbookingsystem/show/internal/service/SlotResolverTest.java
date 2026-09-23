@@ -50,7 +50,8 @@ class SlotResolverTest {
         Map<String, BookingProperties.Slot> withoutNight = new HashMap<>(defaults.slots());
         withoutNight.remove("NIGHT");
         BookingProperties incomplete = new BookingProperties(defaults.cleaningBuffer(), defaults.lateNightCutoff(),
-                defaults.bookingCutoff(), defaults.dateStripDays(), defaults.fillingFastPercent(), withoutNight);
+                defaults.bookingCutoff(), defaults.dateStripDays(), defaults.fillingFastPercent(), withoutNight,
+                defaults.cache());
 
         assertThatThrownBy(() -> new SlotResolver(incomplete))
                 .isInstanceOf(IllegalStateException.class)

@@ -20,6 +20,8 @@ logging:
     # Hibernate warns on every constraint violation, including the ones we turn into 409s on purpose
     # (show overlap ...). Real failures are still logged by GlobalExceptionHandler.
     org.hibernate.orm.jdbc.error: error
+    # Lettuce looks for a macOS-native DNS resolver it doesn't need; we only ever resolve the Redis host
+    io.netty.resolver.dns.DnsServerAddressStreamProviders: error
 
 booking:
   cleaning-buffer: PT20M
@@ -32,6 +34,9 @@ booking:
     AFTERNOON: { from: "12:00", to: "16:00" }
     EVENING:   { from: "16:00", to: "20:00" }
     NIGHT:     { from: "20:00", to: "03:00" }   # ends next day, so it includes the late-night shows
+  cache:
+    show-day-ttl: PT60S
+    seat-counter-ttl: PT10M
 
 ---
 spring:
