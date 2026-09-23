@@ -3,11 +3,15 @@ package com.sumit.movieticketbookingsystem;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
+
+    static final int MAILPIT_SMTP = 1025;
+    static final int MAILPIT_API = 8025;
 
     @Bean
     @ServiceConnection
@@ -19,5 +23,19 @@ public class TestcontainersConfiguration {
     @ServiceConnection(name = "redis")
     GenericContainer<?> redisContainer() {
         return new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
+    }
+
+    @Bean
+    GenericContainer<?> mailpitContainer() {
+        return new GenericContainer<>("axllent/mailpit").withExposedPorts(MAILPIT_SMTP, MAILPIT_API);
+    }
+
+    // Boot has no service connection for mail, so point spring.mail at the container by hand
+    @Bean
+    DynamicPropertyRegistrar mailProperties(GenericContainer<?> mailpitContainer) {
+        return registry -> {
+            registry.add("spring.mail.host", mailpitContainer::getHost);
+            registry.add("spring.mail.port", () -> mailpitContainer.getMappedPort(MAILPIT_SMTP));
+        };
     }
 }

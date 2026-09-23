@@ -16,6 +16,9 @@ spring:
         schema-initialization:
           enabled: false                        # Flyway owns event_publication
       republish-outstanding-events-on-restart: true
+  mail:
+    host: localhost
+    port: 1025                                  # Mailpit; every email shows up at http://localhost:8025
   jpa:
     open-in-view: false
     hibernate:

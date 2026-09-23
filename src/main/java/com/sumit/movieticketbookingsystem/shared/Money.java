@@ -40,6 +40,11 @@ public record Money(long paise) implements Comparable<Money> {
         return compareTo(other) <= 0 ? this : other;
     }
 
+    /** For customer-facing text: ₹300, or ₹837.80 when there are paise. */
+    public String inRupees() {
+        return paise % 100 == 0 ? "₹" + paise / 100 : "₹%d.%02d".formatted(paise / 100, paise % 100);
+    }
+
     @Override
     public int compareTo(Money other) {
         return Long.compare(paise, other.paise);

@@ -45,4 +45,11 @@ class MoneyTest {
         assertThat(Money.ofPaise(5000).min(Money.ofPaise(3000))).isEqualTo(Money.ofPaise(3000));
         assertThat(Money.ofPaise(3000).min(Money.ofPaise(5000))).isEqualTo(Money.ofPaise(3000));
     }
+
+    @Test
+    void inRupeesDropsZeroPaise() {
+        assertThat(Money.ofPaise(30000).inRupees()).isEqualTo("₹300");
+        assertThat(Money.ofPaise(83780).inRupees()).isEqualTo("₹837.80");
+        assertThat(Money.ofPaise(5).inRupees()).isEqualTo("₹0.05");
+    }
 }
