@@ -26,6 +26,7 @@ public final class TestBookingProperties {
         return new BookingProperties(Duration.ofMinutes(20), LocalTime.of(3, 0), Duration.ofMinutes(10), 7, 20, slots,
                 new BookingProperties.Cache(Duration.ofSeconds(60), Duration.ofMinutes(10)),
                 Duration.ofMinutes(8), Duration.ofMinutes(5), 10, 2000, 18, Duration.ofHours(24),
-                new BookingProperties.Payment(List.of("HDFC", "ICICI", "SBI"), List.of("PAYTM", "PHONEPE")));
+                new BookingProperties.Payment(Duration.ofSeconds(15), List.of("HDFC", "ICICI", "SBI"),
+                        List.of("PAYTM", "PHONEPE")));
     }
 }

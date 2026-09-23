@@ -14,6 +14,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -23,6 +24,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -62,7 +65,8 @@ class IdempotencyAspect {
                 .getRequest();
         String key = request.getHeader(HEADER);
         if (key == null || key.isBlank() || key.length() > MAX_KEY_LENGTH) {
-            throw new ValidationException("An " + HEADER + " header of up to " + MAX_KEY_LENGTH + " characters is required");
+            throw new ValidationException(
+                    "An " + HEADER + " header of up to " + MAX_KEY_LENGTH + " characters is required");
         }
         UUID userId = CurrentUser.fromCurrentRequest()
                 .orElseThrow(() -> new IllegalStateException("@Idempotent needs a request with a current user"))
@@ -76,7 +80,12 @@ class IdempotencyAspect {
         }
         try {
             Object result = call.proceed();
-            store.complete(userId, key, successStatus(method), json.writeValueAsString(result));
+            if (result instanceof ResponseEntity<?> response) {
+                String body = json.writeValueAsString(response.getBody());
+                store.complete(userId, key, response.getStatusCode().value(), body);
+            } else {
+                store.complete(userId, key, successStatus(method), json.writeValueAsString(result));
+            }
             return result;
         } catch (DomainException e) {
             store.complete(userId, key, e.code().status().value(), json.writeValueAsString(SavedError.of(e)));
@@ -97,6 +106,11 @@ class IdempotencyAspect {
         }
         if (stored.responseStatus() >= 400) {
             throw new ReplayedErrorException(json.readValue(stored.responseBody(), SavedError.class));
+        }
+        if (ResponseEntity.class.isAssignableFrom(method.getReturnType())) {
+            Type bodyType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+            Object body = json.readValue(stored.responseBody(), json.getTypeFactory().constructType(bodyType));
+            return ResponseEntity.status(stored.responseStatus()).body(body);
         }
         return json.readValue(stored.responseBody(), method.getReturnType());
     }

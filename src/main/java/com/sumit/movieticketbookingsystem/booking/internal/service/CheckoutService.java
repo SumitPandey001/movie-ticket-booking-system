@@ -2,12 +2,16 @@ package com.sumit.movieticketbookingsystem.booking.internal.service;
 
 import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingSeat;
+import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
 import com.sumit.movieticketbookingsystem.booking.internal.persistence.BookingRepository;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
+import com.sumit.movieticketbookingsystem.inventory.SeatsUnavailableException;
 import com.sumit.movieticketbookingsystem.payment.InitiatePayment;
 import com.sumit.movieticketbookingsystem.payment.PaymentApi;
 import com.sumit.movieticketbookingsystem.payment.PaymentDetails;
 import com.sumit.movieticketbookingsystem.payment.PaymentResult;
+import com.sumit.movieticketbookingsystem.payment.RefundReason;
+import com.sumit.movieticketbookingsystem.payment.RefundRequest;
 import com.sumit.movieticketbookingsystem.payment.SimulatedOutcome;
 import com.sumit.movieticketbookingsystem.pricing.CouponApi;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
@@ -21,8 +25,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Paying for a hold. Three steps, deliberately not one transaction: start the payment (tx1), call the gateway with
- * no transaction open so no locks are held while it works, then confirm or fail the booking (tx2).
+ * Paying for a hold. Deliberately not one transaction: start the payment (tx1), call the gateway with no
+ * transaction open so no locks are held while it works, then confirm or fail the booking (tx2). If the payment
+ * succeeds after the seats were lost, the booking is closed and the payment refunded instead (tx3).
  */
 @Service
 public class CheckoutService {
@@ -54,10 +59,31 @@ public class CheckoutService {
     public Checkout pay(UUID bookingId, UUID userId, PaymentDetails details, SimulatedOutcome outcome) {
         UUID paymentId = tx.execute(status -> startPayment(bookingId, userId, details));
         PaymentResult result = payments.execute(paymentId, details, outcome);
-        Booking booking = tx.execute(status -> result.status() == PaymentResult.Status.SUCCESS
-                ? confirm(bookingId)
-                : fail(bookingId));
+        Booking booking = switch (result.status()) {
+            case SUCCESS -> completePayment(bookingId, true);
+            case FAILED -> completePayment(bookingId, false);
+            case PENDING -> bookings.findById(bookingId).orElseThrow();   // PAYMENT_PENDING until the event
+        };
         return new Checkout(booking, result);
+    }
+
+    /**
+     * What happens once the gateway has answered, straight away or later through an event. Safe to call twice
+     * for the same payment, because a redelivered event finds the booking already settled.
+     */
+    public Booking completePayment(UUID bookingId, boolean paid) {
+        if (!paid) {
+            return tx.execute(status -> fail(bookingId));
+        }
+        try {
+            Booking confirmed = tx.execute(status -> confirm(bookingId));
+            if (confirmed != null) {
+                return confirmed;
+            }
+        } catch (SeatsUnavailableException e) {
+            // someone took the seats after this hold ran out; tx2 rolled back, so fall through to the refund
+        }
+        return tx.execute(status -> refundLatePayment(bookingId));
     }
 
     /** Invalid payment details roll this back too, leaving the booking HELD so the customer can try again. */
@@ -72,8 +98,15 @@ public class CheckoutService {
                 booking.getTotals().total(), details));
     }
 
+    /** @return the confirmed booking, or null if it can no longer be confirmed (so the payment must go back) */
     private Booking confirm(UUID bookingId) {
         Booking booking = bookings.findById(bookingId).orElseThrow();
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return booking;                                        // the same payment reported twice
+        }
+        if (booking.getStatus() != BookingStatus.PAYMENT_PENDING) {
+            return null;                                           // already expired while the payment was pending
+        }
         Instant now = Instant.now(clock);
         inventory.confirm(booking.getShowId(),
                 booking.getSeats().stream().map(BookingSeat::layoutSeatId).collect(Collectors.toSet()),
@@ -85,9 +118,25 @@ public class CheckoutService {
 
     private Booking fail(UUID bookingId) {
         Booking booking = bookings.findById(bookingId).orElseThrow();
+        if (booking.getStatus() != BookingStatus.PAYMENT_PENDING) {
+            return booking;                                        // already expired or reported twice
+        }
         booking.fail(Instant.now(clock));
         inventory.releaseHeld(booking.getShowId(), bookingId);
         coupons.release(bookingId);
+        return booking;
+    }
+
+    /** The money came in but the seats are gone: close the booking and give every paisa back. */
+    private Booking refundLatePayment(UUID bookingId) {
+        Booking booking = bookings.findById(bookingId).orElseThrow();
+        if (booking.getStatus().holdsSeats()) {
+            booking.expire(Instant.now(clock));
+            inventory.releaseHeld(booking.getShowId(), bookingId);
+            coupons.release(bookingId);
+        }
+        payments.requestRefund(
+                new RefundRequest(bookingId, null, booking.getTotals().total(), RefundReason.LATE_PAYMENT));
         return booking;
     }
 }

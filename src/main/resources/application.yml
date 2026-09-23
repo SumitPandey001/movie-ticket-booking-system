@@ -10,6 +10,12 @@ spring:
     resources:
       # JSON API only; without this, unknown paths go to the static resource handler and skip our error advice
       add-mappings: false
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false                        # Flyway owns event_publication
+      republish-outstanding-events-on-restart: true
   jpa:
     open-in-view: false
     hibernate:
@@ -44,6 +50,7 @@ booking:
   gst-percent: 18
   idempotency-retention: PT24H
   payment:
+    simulated-delay: PT15S                      # how long a DELAYED simulated payment takes to succeed
     net-banking-banks: [HDFC, ICICI, SBI, AXIS, KOTAK]
     wallets: [PAYTM, PHONEPE, AMAZONPAY]
 

@@ -3,12 +3,14 @@ package com.sumit.movieticketbookingsystem.booking.internal.web;
 import com.sumit.movieticketbookingsystem.booking.internal.service.CheckoutService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService.CreateHold;
+import com.sumit.movieticketbookingsystem.payment.PaymentResult;
 import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
 import com.sumit.movieticketbookingsystem.shared.user.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,10 +57,15 @@ class BookingController {
     record CouponRequest(@NotBlank @Size(max = 30) String code) {
     }
 
+    /** 200 once the payment has an answer (declined included), 202 while it's still pending. */
     @PostMapping("/{id}/payments")
     @Idempotent
-    CheckoutResponse pay(@PathVariable UUID id, @Valid @RequestBody PaymentRequest request, CurrentUser user) {
-        return CheckoutResponse.from(checkoutService.pay(id, user.id(), request.details(), request.outcome()));
+    ResponseEntity<CheckoutResponse> pay(@PathVariable UUID id, @Valid @RequestBody PaymentRequest request,
+            CurrentUser user) {
+        CheckoutResponse response = CheckoutResponse.from(
+                checkoutService.pay(id, user.id(), request.details(), request.outcome()));
+        boolean pending = response.paymentStatus() == PaymentResult.Status.PENDING;
+        return ResponseEntity.status(pending ? HttpStatus.ACCEPTED : HttpStatus.OK).body(response);
     }
 
     @PostMapping("/{id}/release")

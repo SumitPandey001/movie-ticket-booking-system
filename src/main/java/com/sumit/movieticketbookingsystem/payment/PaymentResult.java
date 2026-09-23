@@ -10,6 +10,8 @@ public record PaymentResult(UUID paymentId, Status status, String providerTxnId,
 
     public enum Status {
         SUCCESS,
-        FAILED
+        FAILED,
+        /** the outcome comes later as a {@link PaymentSucceeded} or {@link PaymentFailed} event */
+        PENDING
     }
 }

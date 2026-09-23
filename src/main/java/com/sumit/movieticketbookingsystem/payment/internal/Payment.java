@@ -83,6 +83,14 @@ class Payment {
         return id;
     }
 
+    UUID getBookingId() {
+        return bookingId;
+    }
+
+    UUID getCustomerId() {
+        return customerId;
+    }
+
     PaymentMethod getMethod() {
         return method;
     }
