@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -41,6 +44,14 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INVALID_STATE"))
                 .andExpect(jsonPath("$.detail").value("Booking cannot move from CANCELLED to CONFIRMED"));
+    }
+
+    @Test
+    void domainExceptionDetailsBecomeResponseFields() throws Exception {
+        mvc.perform(get("/test/seats-taken"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SEATS_UNAVAILABLE"))
+                .andExpect(jsonPath("$.unavailableSeatIds[0]").value(5013));
     }
 
     @Test
@@ -104,6 +115,16 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/transition")
         String transition() {
             throw new IllegalTransitionException("Booking", Status.CANCELLED, Status.CONFIRMED);
+        }
+
+        @GetMapping("/test/seats-taken")
+        String seatsTaken() {
+            throw new DomainException(ErrorCode.SEATS_UNAVAILABLE, "1 of the selected seats was just taken") {
+                @Override
+                public Map<String, Object> details() {
+                    return Map.of("unavailableSeatIds", List.of(5013));
+                }
+            };
         }
 
         @GetMapping("/test/too-many-seats")

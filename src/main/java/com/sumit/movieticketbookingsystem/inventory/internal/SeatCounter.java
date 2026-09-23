@@ -6,10 +6,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,21 +21,29 @@ import java.util.Map;
 
 /**
  * Seats-left per show, kept in Redis so the browse page doesn't count seat rows on every request.
- * Missing keys are rebuilt from Postgres. The number is for display only and may lag briefly;
- * the TTL puts a bound on any drift.
+ * Missing keys are rebuilt from Postgres; changes are applied as +/- deltas after commit. The number is for
+ * display only: a hold that runs out isn't added back until the sweeper releases it, and the TTL bounds any drift.
  */
 @Service
 class SeatCounter implements SeatAvailabilityReader {
 
     private static final Logger log = LoggerFactory.getLogger(SeatCounter.class);
 
+    // Only adjusts a counter that exists: INCRBY on a missing key would start it from 0 instead of the real count.
+    private static final RedisScript<Long> ADJUST_IF_PRESENT = RedisScript.of("""
+            if redis.call('EXISTS', KEYS[1]) == 1 then return redis.call('INCRBY', KEYS[1], ARGV[1]) end
+            return nil
+            """, Long.class);
+
     private final SeatInventoryRepository seats;
     private final StringRedisTemplate redis;
+    private final Clock clock;
     private final Duration ttl;
 
-    SeatCounter(SeatInventoryRepository seats, StringRedisTemplate redis, BookingProperties properties) {
+    SeatCounter(SeatInventoryRepository seats, StringRedisTemplate redis, Clock clock, BookingProperties properties) {
         this.seats = seats;
         this.redis = redis;
+        this.clock = clock;
         this.ttl = properties.cache().seatCounterTtl();
     }
 
@@ -47,7 +58,7 @@ class SeatCounter implements SeatAvailabilityReader {
             cached = redis.opsForValue().multiGet(ids.stream().map(SeatCounter::key).toList());
         } catch (DataAccessException e) {
             log.warn("Seat counters unavailable, counting in the database: {}", e.getMessage());
-            return seats.availableCounts(ids);
+            return seats.availableCounts(ids, Instant.now(clock));
         }
 
         Map<Long, Integer> seatsLeft = new HashMap<>();
@@ -61,7 +72,7 @@ class SeatCounter implements SeatAvailabilityReader {
             }
         }
         if (!missing.isEmpty()) {
-            Map<Long, Integer> rebuilt = seats.availableCounts(missing);
+            Map<Long, Integer> rebuilt = seats.availableCounts(missing, Instant.now(clock));
             seatsLeft.putAll(rebuilt);
             store(rebuilt);
         }
@@ -69,11 +80,11 @@ class SeatCounter implements SeatAvailabilityReader {
     }
 
     @TransactionalEventListener
-    void invalidate(SeatAvailabilityChanged change) {
+    void adjust(SeatAvailabilityChanged change) {
         try {
-            redis.delete(key(change.showId()));
+            redis.execute(ADJUST_IF_PRESENT, List.of(key(change.showId())), String.valueOf(change.delta()));
         } catch (DataAccessException e) {
-            log.warn("Couldn't reset the seat counter of show {}; it expires within {}: {}",
+            log.warn("Couldn't adjust the seat counter of show {}; it expires within {}: {}",
                     change.showId(), ttl, e.getMessage());
         }
     }

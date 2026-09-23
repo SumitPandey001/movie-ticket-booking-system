@@ -26,7 +26,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(DomainException.class)
     ProblemDetail handleDomain(DomainException ex) {
-        return problem(ex.code(), ex.getMessage());
+        ProblemDetail problem = problem(ex.code(), ex.getMessage());
+        ex.details().forEach(problem::setProperty);
+        return problem;
     }
 
     @ExceptionHandler(Exception.class)
