@@ -12,7 +12,6 @@ import com.sumit.movieticketbookingsystem.catalog.internal.domain.LayoutStatus;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Movie;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Screen;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.SeatLayout;
-import com.sumit.movieticketbookingsystem.catalog.internal.domain.SeatType;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Theater;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.CityRepository;
 import com.sumit.movieticketbookingsystem.catalog.internal.persistence.MovieRepository;
@@ -66,9 +65,10 @@ class CatalogFacade implements CatalogApi {
         SeatLayout layout = layouts.findById(layoutId).orElseThrow(() -> new NotFoundException("Seat layout", layoutId));
         List<LayoutView.Seat> seats = layout.getSeats().stream()
                 .map(seat -> new LayoutView.Seat(seat.getId(), seat.getLabel(), seat.getCategory().getId(),
-                        seat.getSeatType() == SeatType.BLOCKED))
+                        seat.getGridRow(), seat.getGridCol(), seat.getSeatType().name()))
                 .toList();
-        return new LayoutView(layout.getId(), layout.getScreenId(), layout.getTotalSeats(), seats);
+        return new LayoutView(layout.getId(), layout.getScreenId(), layout.getGridRows(), layout.getGridCols(),
+                layout.getTotalSeats(), seats);
     }
 
     @Override

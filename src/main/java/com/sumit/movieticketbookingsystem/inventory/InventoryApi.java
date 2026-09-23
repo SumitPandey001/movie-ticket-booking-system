@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.inventory;
 
 import com.sumit.movieticketbookingsystem.catalog.LayoutView;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,4 +18,7 @@ public interface InventoryApi {
 
     /** Unblocks seats that are blocked and returns the ids that weren't. */
     Set<Long> unblock(long showId, Set<Long> seatIds);
+
+    /** Current status of every seat of the show, by layout seat id. Always read from the database. */
+    Map<Long, SeatStatus> seatStatuses(long showId);
 }

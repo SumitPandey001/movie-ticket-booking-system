@@ -38,6 +38,17 @@ class PriceRepository {
         return prices;
     }
 
+    /** Price in paise by category id. */
+    Map<Long, Long> showPrices(long showId) {
+        Map<Long, Long> prices = new LinkedHashMap<>();
+        jdbc.sql("SELECT category_id, price_paise FROM show_category_price WHERE show_id = ? ORDER BY category_id")
+                .param(showId)
+                .query(rs -> {
+                    prices.put(rs.getLong("category_id"), rs.getLong("price_paise"));
+                });
+        return prices;
+    }
+
     void insertShowPrice(long showId, long categoryId, long pricePaise, boolean overridden) {
         jdbc.sql("""
                         INSERT INTO show_category_price (show_id, category_id, price_paise, overridden)

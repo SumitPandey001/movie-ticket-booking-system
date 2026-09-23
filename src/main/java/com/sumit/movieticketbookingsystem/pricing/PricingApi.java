@@ -22,4 +22,7 @@ public interface PricingApi {
      * @return the show's new lowest price
      */
     long overrideShowPrices(long showId, Map<String, Long> prices);
+
+    /** The show's price per seat category, by category id. */
+    Map<Long, Long> showPrices(long showId);
 }
