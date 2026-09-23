@@ -132,20 +132,20 @@ class HoldApiIT {
 
     @Test
     void rejectsHoldsThatCantHappen() throws Exception {
-        mvc.perform(asCustomer(post("/api/v1/bookings")).content("""
+        mvc.perform(asCustomer(post("/api/v1/bookings")).header("Idempotency-Key", UUID.randomUUID()).content("""
                         {"showId": %d, "seatIds": []}
                         """.formatted(showId)))
                 .andExpect(status().isBadRequest());
 
         List<Long> eleven = LongStream.rangeClosed(1, 11).boxed().toList();
-        mvc.perform(asCustomer(post("/api/v1/bookings")).content("""
+        mvc.perform(asCustomer(post("/api/v1/bookings")).header("Idempotency-Key", UUID.randomUUID()).content("""
                         {"showId": %d, "seatIds": %s}
                         """.formatted(showId, eleven)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Pick between 1 and 10 seats"));
 
         long scheduledShow = fixtures.scheduledShow().id();
-        mvc.perform(asCustomer(post("/api/v1/bookings")).content("""
+        mvc.perform(asCustomer(post("/api/v1/bookings")).header("Idempotency-Key", UUID.randomUUID()).content("""
                         {"showId": %d, "seatIds": [1]}
                         """.formatted(scheduledShow)))
                 .andExpect(status().isUnprocessableContent())
@@ -154,7 +154,7 @@ class HoldApiIT {
 
     private ResultActions hold(UUID customer, String... labels) throws Exception {
         List<Long> ids = Arrays.stream(labels).map(seats::get).toList();
-        return mvc.perform(asCustomer(post("/api/v1/bookings"), customer).content("""
+        return mvc.perform(asCustomer(post("/api/v1/bookings"), customer).header("Idempotency-Key", UUID.randomUUID()).content("""
                 {"showId": %d, "seatIds": %s}
                 """.formatted(showId, ids)));
     }

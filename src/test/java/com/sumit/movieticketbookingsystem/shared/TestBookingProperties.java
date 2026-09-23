@@ -24,6 +24,6 @@ public final class TestBookingProperties {
     public static BookingProperties withSlots(Map<String, Slot> slots) {
         return new BookingProperties(Duration.ofMinutes(20), LocalTime.of(3, 0), Duration.ofMinutes(10), 7, 20, slots,
                 new BookingProperties.Cache(Duration.ofSeconds(60), Duration.ofMinutes(10)),
-                Duration.ofMinutes(8), 10, 2000, 18);
+                Duration.ofMinutes(8), 10, 2000, 18, Duration.ofHours(24));
     }
 }

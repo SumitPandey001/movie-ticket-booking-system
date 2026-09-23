@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.booking.internal.web;
 
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService.CreateHold;
+import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
 import com.sumit.movieticketbookingsystem.shared.user.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ class BookingController {
     /** Holds seats; the response's holdExpiresAt drives the countdown in the client. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Idempotent
     BookingResponse hold(@Valid @RequestBody HoldRequest request, CurrentUser user) {
         return BookingResponse.from(holdService.createHold(
                 new CreateHold(user.id(), request.showId(), request.seatIds())));

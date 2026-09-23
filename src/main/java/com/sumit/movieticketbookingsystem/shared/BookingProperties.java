@@ -26,6 +26,7 @@ import java.util.Map;
  * @param maxSeatsPerBooking most seats one booking may hold
  * @param convenienceFeePaise flat fee per seat
  * @param gstPercent         GST on tickets (after discount) and on the convenience fee
+ * @param idempotencyRetention how long a request's Idempotency-Key and saved answer are kept
  */
 @Validated
 @ConfigurationProperties("booking")
@@ -40,7 +41,8 @@ public record BookingProperties(
         @NotNull Duration holdDuration,
         @Min(1) @Max(50) int maxSeatsPerBooking,
         @Min(0) long convenienceFeePaise,
-        @Min(0) @Max(100) int gstPercent) {
+        @Min(0) @Max(100) int gstPercent,
+        @NotNull Duration idempotencyRetention) {
 
     public record Slot(@NotNull LocalTime from, @NotNull LocalTime to) {
     }
