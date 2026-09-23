@@ -70,6 +70,11 @@ class IdempotencyStore {
         jdbc.sql("DELETE FROM idempotency_record WHERE user_id = ? AND idem_key = ?").params(userId, key).update();
     }
 
+    /** @return how many expired keys were removed */
+    int deleteExpired(Instant now) {
+        return jdbc.sql("DELETE FROM idempotency_record WHERE expires_at < ?").param(utc(now)).update();
+    }
+
     private static OffsetDateTime utc(Instant instant) {
         return instant.atOffset(ZoneOffset.UTC);
     }
