@@ -2,7 +2,6 @@ package com.sumit.movieticketbookingsystem.booking;
 
 import com.jayway.jsonpath.JsonPath;
 import com.sumit.movieticketbookingsystem.TestcontainersConfiguration;
-import com.sumit.movieticketbookingsystem.catalog.CatalogFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,17 +14,12 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static com.sumit.movieticketbookingsystem.ApiRequests.asAdmin;
 import static com.sumit.movieticketbookingsystem.ApiRequests.asCustomer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -46,19 +40,16 @@ class HoldApiIT {
     @Autowired
     private JdbcClient jdbc;
 
-    private CatalogFixtures catalog;
+    private BookingFixtures fixtures;
     private long showId;
     private Map<String, Long> seats;     // A1-A5 regular (₹200), B1-B5 premium (₹300)
 
     @BeforeEach
     void openShow() throws Exception {
-        catalog = new CatalogFixtures(mvc);
-        showId = createShow();
-        mvc.perform(asAdmin(post("/api/v1/admin/shows/{id}/open", showId))).andExpect(status().isOk());
-        seats = jdbc.sql("SELECT seat_label, layout_seat_id FROM show_seat WHERE show_id = ?")
-                .param(showId)
-                .query((rs, row) -> Map.entry(rs.getString(1), rs.getLong(2)))
-                .list().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        fixtures = new BookingFixtures(mvc, jdbc);
+        BookingFixtures.BookableShow show = fixtures.openShow();
+        showId = show.id();
+        seats = show.seatIdsByLabel();
     }
 
     @Test
@@ -153,7 +144,7 @@ class HoldApiIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Pick between 1 and 10 seats"));
 
-        long scheduledShow = createShow();                                  // never opened
+        long scheduledShow = fixtures.scheduledShow().id();
         mvc.perform(asCustomer(post("/api/v1/bookings")).content("""
                         {"showId": %d, "seatIds": [1]}
                         """.formatted(scheduledShow)))
@@ -166,13 +157,5 @@ class HoldApiIT {
         return mvc.perform(asCustomer(post("/api/v1/bookings"), customer).content("""
                 {"showId": %d, "seatIds": %s}
                 """.formatted(showId, ids)));
-    }
-
-    private long createShow() throws Exception {
-        OffsetDateTime start = OffsetDateTime.now(ZoneOffset.ofHoursMinutes(5, 30))
-                .plusDays(2).truncatedTo(ChronoUnit.DAYS).withHour(19);
-        return catalog.create("/api/v1/admin/shows", """
-                {"movieId": %d, "screenId": %d, "startTime": "%s", "language": "HI", "format": "2D"}
-                """.formatted(catalog.movie(120), catalog.screenWithActiveLayout(), start));
     }
 }
