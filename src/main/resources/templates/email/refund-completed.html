@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body style="font-family: Arial, sans-serif; color: #222;">
+<p>Hi <span th:text="${name} ?: 'there'">Asha</span>,</p>
+<p th:if="${latePayment}">
+    Your payment for booking <strong th:text="${bookingRef}">BK000001</strong> came through after the seats had
+    been released, so we couldn't confirm it.
+</p>
+<p>We've refunded <strong th:text="${amount}">₹519.20</strong> to your original payment method. It usually shows
+    up within 5–7 working days.</p>
+</body>
+</html>

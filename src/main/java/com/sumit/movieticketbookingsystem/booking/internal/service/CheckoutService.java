@@ -36,16 +36,18 @@ public class CheckoutService {
     private final PaymentApi payments;
     private final InventoryApi inventory;
     private final CouponApi coupons;
+    private final BookingEvents events;
     private final TransactionTemplate tx;
     private final Duration paymentWindow;
     private final Clock clock;
 
     CheckoutService(BookingRepository bookings, PaymentApi payments, InventoryApi inventory, CouponApi coupons,
-            TransactionTemplate tx, BookingProperties properties, Clock clock) {
+            BookingEvents events, TransactionTemplate tx, BookingProperties properties, Clock clock) {
         this.bookings = bookings;
         this.payments = payments;
         this.inventory = inventory;
         this.coupons = coupons;
+        this.events = events;
         this.tx = tx;
         this.paymentWindow = properties.paymentWindow();
         this.clock = clock;
@@ -113,6 +115,7 @@ public class CheckoutService {
                 bookingId, now);
         coupons.consume(bookingId);
         booking.confirm(now);
+        events.confirmed(booking);
         return booking;
     }
 

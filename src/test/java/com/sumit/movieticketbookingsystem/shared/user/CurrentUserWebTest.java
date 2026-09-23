@@ -4,10 +4,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,12 +28,16 @@ class CurrentUserWebTest {
     @Autowired
     private MockMvc mvc;
 
+    @MockitoBean
+    private UserDirectory directory;
+
     @Test
     void missingUserIdIsUnauthenticated() throws Exception {
         mvc.perform(get("/api/v1/me").header("X-User-Role", "CUSTOMER"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
                 .andExpect(jsonPath("$.detail").value("Missing or invalid X-User-Id header"));
+        verify(directory, never()).sync(any());
     }
 
     @Test
@@ -55,6 +65,8 @@ class CurrentUserWebTest {
                 .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.email").value("asha@example.com"))
                 .andExpect(jsonPath("$.phone").doesNotExist());
+        verify(directory).sync(new CurrentUser(UUID.fromString(USER_ID), Role.CUSTOMER, null,
+                "asha@example.com", null));
     }
 
     @Test
