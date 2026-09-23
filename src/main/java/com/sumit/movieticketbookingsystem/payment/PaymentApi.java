@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.payment;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -29,4 +30,7 @@ public interface PaymentApi {
      * @throws IllegalStateException if the booking has no successful payment or the refund would exceed it
      */
     UUID requestRefund(RefundRequest request);
+
+    /** The booking's successful payment with its refunds; empty if it was never paid for. */
+    Optional<PaymentSummary> summary(UUID bookingId);
 }

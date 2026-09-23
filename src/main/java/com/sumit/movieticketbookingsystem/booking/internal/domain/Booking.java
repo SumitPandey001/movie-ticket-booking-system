@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -69,6 +70,7 @@ public class Booking {
     private RefundPolicySnapshot refundPolicySnapshot;
 
     @ElementCollection
+    @BatchSize(size = 50)
     @CollectionTable(name = "booking_seat", joinColumns = @JoinColumn(name = "booking_id"))
     private Set<BookingSeat> seats = new HashSet<>();
 

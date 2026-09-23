@@ -5,6 +5,7 @@ import com.sumit.movieticketbookingsystem.payment.PaymentApi;
 import com.sumit.movieticketbookingsystem.payment.PaymentDetails;
 import com.sumit.movieticketbookingsystem.payment.PaymentResult;
 import com.sumit.movieticketbookingsystem.payment.PaymentSucceeded;
+import com.sumit.movieticketbookingsystem.payment.PaymentSummary;
 import com.sumit.movieticketbookingsystem.payment.RefundReason;
 import com.sumit.movieticketbookingsystem.payment.RefundRequest;
 import com.sumit.movieticketbookingsystem.payment.SimulatedOutcome;
@@ -107,6 +108,19 @@ class PaymentFacade implements PaymentApi {
                 request.cancellationId(), request.amountPaise(), request.reason(), Instant.now(clock)));
         events.publishEvent(new RefundRequested(refund.getId()));
         return refund.getId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PaymentSummary> summary(UUID bookingId) {
+        return payments.findByBookingIdAndStatus(bookingId, PaymentStatus.SUCCESS)
+                .map(payment -> new PaymentSummary(payment.getId(), payment.getMethod(), payment.getMaskedDetails(),
+                        payment.getAmountPaise(),
+                        refunds.findByPaymentIdOrderByCreatedAt(payment.getId()).stream()
+                                .map(refund -> new PaymentSummary.Refund(refund.getId(), refund.getCancellationId(),
+                                        refund.getAmountPaise(), refund.getReason(),
+                                        PaymentSummary.Refund.Status.valueOf(refund.getStatus().name())))
+                                .toList()));
     }
 
     // ponytail: the simulated gateway's later answer lives only in memory, so a restart loses it and the booking

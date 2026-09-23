@@ -4,11 +4,14 @@ import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +47,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("SELECT b.id FROM Booking b WHERE b.showId = :showId AND b.status IN :statuses")
     List<UUID> findIdsByShowIdAndStatusIn(long showId, Collection<BookingStatus> statuses);
+
+    // history pages; seats are batch-loaded (see Booking.seats), so a page doesn't cost a query per booking
+    Page<Booking> findByUserIdAndStatusAndShowStartTimeAfter(UUID userId, BookingStatus status, Instant time,
+            Pageable pageable);
+
+    Page<Booking> findByUserIdAndStatusAndShowStartTimeLessThanEqual(UUID userId, BookingStatus status, Instant time,
+            Pageable pageable);
+
+    Page<Booking> findByUserIdAndStatus(UUID userId, BookingStatus status, Pageable pageable);
 
     /** At most one, thanks to booking_one_active_hold. */
     Optional<Booking> findByUserIdAndShowIdAndStatusIn(UUID userId, long showId, Collection<BookingStatus> statuses);

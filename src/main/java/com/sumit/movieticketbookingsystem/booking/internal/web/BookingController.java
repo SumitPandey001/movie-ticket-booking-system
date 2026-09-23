@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.booking.internal.web;
 
+import com.sumit.movieticketbookingsystem.booking.internal.service.BookingQueryService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.CancellationService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.CheckoutService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
@@ -8,6 +9,8 @@ import com.sumit.movieticketbookingsystem.payment.PaymentResult;
 import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
 import com.sumit.movieticketbookingsystem.shared.user.CurrentUser;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -34,12 +37,22 @@ class BookingController {
     private final HoldService holdService;
     private final CheckoutService checkoutService;
     private final CancellationService cancellationService;
+    private final BookingQueryService queryService;
 
     BookingController(HoldService holdService, CheckoutService checkoutService,
-            CancellationService cancellationService) {
+            CancellationService cancellationService, BookingQueryService queryService) {
         this.holdService = holdService;
         this.checkoutService = checkoutService;
         this.cancellationService = cancellationService;
+        this.queryService = queryService;
+    }
+
+    /** The customer's bookings, one page at a time; {@code page} starts at 0. */
+    @GetMapping
+    HistoryResponse history(@RequestParam BookingQueryService.View view,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size, CurrentUser user) {
+        return HistoryResponse.from(queryService.history(user.id(), view, page, size));
     }
 
     /** Holds seats; the response's holdExpiresAt drives the countdown in the client. */
@@ -98,9 +111,10 @@ class BookingController {
     record CancelRequest(Set<@NotNull Long> seatIds) {
     }
 
+    /** Everything about one booking: seats, cancellations, and how the payment and any refunds stand. */
     @GetMapping("/{id}")
-    BookingResponse booking(@PathVariable UUID id, CurrentUser user) {
-        return BookingResponse.from(holdService.booking(id, user.id()));
+    BookingDetailsResponse booking(@PathVariable UUID id, CurrentUser user) {
+        return BookingDetailsResponse.from(queryService.details(id, user.id()));
     }
 
     private static Set<Long> orEmpty(Set<Long> seatIds) {
