@@ -71,7 +71,7 @@ class SameUserDoubleHoldIT {
         return () -> {
             together.await();
             try {
-                return holdService.createHold(new CreateHold(customer, showId, seats));
+                return holdService.createHold(new CreateHold(customer, showId, seats, null));
             } catch (DomainException e) {
                 return e.code();
             }

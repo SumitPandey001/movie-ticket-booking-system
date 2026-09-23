@@ -74,7 +74,7 @@ class OverlappingHoldsIT {
         return () -> {
             together.await();
             try {
-                return Optional.of(holdService.createHold(new CreateHold(customer, showId, seats)));
+                return Optional.of(holdService.createHold(new CreateHold(customer, showId, seats, null)));
             } catch (SeatsUnavailableException e) {
                 return Optional.empty();
             }

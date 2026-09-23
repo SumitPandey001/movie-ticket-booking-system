@@ -62,11 +62,11 @@ class ExpiredHoldTakeoverIT {
     void anotherCustomerTakesTheSeatsOfAnExpiredHold() throws Exception {
         BookableShow show = new BookingFixtures(mvc, jdbc).openShow();
         assertThat(seatsLeft(show)).isEqualTo(10);
-        holdService.createHold(new CreateHold(UUID.randomUUID(), show.id(), show.seats("A1", "A2")));
+        holdService.createHold(new CreateHold(UUID.randomUUID(), show.id(), show.seats("A1", "A2"), null));
         assertThat(seatsLeft(show)).isEqualTo(8);
 
         clock.advance(PAST_THE_HOLD);
-        Booking takeover = holdService.createHold(new CreateHold(UUID.randomUUID(), show.id(), show.seats("A1")));
+        Booking takeover = holdService.createHold(new CreateHold(UUID.randomUUID(), show.id(), show.seats("A1"), null));
 
         assertThat(takeover.getStatus()).isEqualTo(BookingStatus.HELD);
         assertThat(seatsLeft(show)).isEqualTo(8);    // A1 was already counted as gone, so no double decrement
@@ -79,10 +79,10 @@ class ExpiredHoldTakeoverIT {
     void customerCanHoldAgainOnceTheirOwnHoldRanOut() throws Exception {
         BookableShow show = new BookingFixtures(mvc, jdbc).openShow();
         UUID customer = UUID.randomUUID();
-        Booking first = holdService.createHold(new CreateHold(customer, show.id(), show.seats("B1")));
+        Booking first = holdService.createHold(new CreateHold(customer, show.id(), show.seats("B1"), null));
 
         clock.advance(PAST_THE_HOLD);
-        Booking second = holdService.createHold(new CreateHold(customer, show.id(), show.seats("B2")));
+        Booking second = holdService.createHold(new CreateHold(customer, show.id(), show.seats("B2"), null));
 
         assertThat(holdService.booking(first.getId(), customer).getStatus()).isEqualTo(BookingStatus.EXPIRED);
         assertThat(second.getStatus()).isEqualTo(BookingStatus.HELD);

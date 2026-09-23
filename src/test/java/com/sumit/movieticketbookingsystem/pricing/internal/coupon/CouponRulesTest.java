@@ -14,6 +14,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CouponRulesTest {
 
@@ -57,6 +59,20 @@ class CouponRulesTest {
         assertThat(rule.violation(coupon(Set.of(scope(CouponScope.Type.CATEGORY, PREMIUM))), order(60000))).isEmpty();
         assertThat(rule.violation(coupon(Set.of(scope(CouponScope.Type.CATEGORY, 3))), order(60000)))
                 .contains("This coupon can't be used for this show");                             // no recliner seat
+    }
+
+    @Test
+    void perUserLimit() {
+        CouponRedemptionRepository redemptions = mock(CouponRedemptionRepository.class);
+        PerUserLimitRule rule = new PerUserLimitRule(redemptions);
+        Coupon oncePerCustomer = coupon(Set.of());
+        ReflectionTestUtils.setField(oncePerCustomer, "id", 5L);
+        CouponContext order = order(60000);
+
+        when(redemptions.usesBy(5L, order.userId())).thenReturn(0);
+        assertThat(rule.violation(oncePerCustomer, order)).isEmpty();
+        when(redemptions.usesBy(5L, order.userId())).thenReturn(1);
+        assertThat(rule.violation(oncePerCustomer, order)).contains("You've already used this coupon");
     }
 
     @Test

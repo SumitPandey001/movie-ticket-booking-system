@@ -21,6 +21,7 @@ public enum ErrorCode {
     IDEMPOTENCY_IN_PROGRESS(HttpStatus.CONFLICT, "Request still in progress"),
     COUPON_INVALID(HttpStatus.UNPROCESSABLE_CONTENT, "Coupon can't be used"),
     SHOW_NOT_BOOKABLE(HttpStatus.UNPROCESSABLE_CONTENT, "Show not bookable"),
+    HOLD_EXPIRED(HttpStatus.GONE, "Hold expired"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
 
     private final HttpStatus status;
