@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,6 +28,7 @@ import java.util.Map;
  * @param convenienceFeePaise flat fee per seat
  * @param gstPercent         GST on tickets (after discount) and on the convenience fee
  * @param idempotencyRetention how long a request's Idempotency-Key and saved answer are kept
+ * @param payment            what the simulated payment methods accept
  */
 @Validated
 @ConfigurationProperties("booking")
@@ -42,11 +44,16 @@ public record BookingProperties(
         @Min(1) @Max(50) int maxSeatsPerBooking,
         @Min(0) long convenienceFeePaise,
         @Min(0) @Max(100) int gstPercent,
-        @NotNull Duration idempotencyRetention) {
+        @NotNull Duration idempotencyRetention,
+        @NotNull @Valid Payment payment) {
 
     public record Slot(@NotNull LocalTime from, @NotNull LocalTime to) {
     }
 
     public record Cache(@NotNull Duration showDayTtl, @NotNull Duration seatCounterTtl) {
+    }
+
+    /** Bank codes for net banking and wallet providers the checkout offers. */
+    public record Payment(@NotEmpty List<String> netBankingBanks, @NotEmpty List<String> wallets) {
     }
 }

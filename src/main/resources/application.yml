@@ -42,6 +42,9 @@ booking:
   convenience-fee-paise: 2000     # ₹20 per seat
   gst-percent: 18
   idempotency-retention: PT24H
+  payment:
+    net-banking-banks: [HDFC, ICICI, SBI, AXIS, KOTAK]
+    wallets: [PAYTM, PHONEPE, AMAZONPAY]
 
 ---
 spring:
