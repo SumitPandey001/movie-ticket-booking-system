@@ -5,10 +5,14 @@ import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService.C
 import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
 import com.sumit.movieticketbookingsystem.shared.user.CurrentUser;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -32,7 +36,20 @@ class BookingController {
     @Idempotent
     BookingResponse hold(@Valid @RequestBody HoldRequest request, CurrentUser user) {
         return BookingResponse.from(holdService.createHold(
-                new CreateHold(user.id(), request.showId(), request.seatIds())));
+                new CreateHold(user.id(), request.showId(), request.seatIds(), request.couponCode())));
+    }
+
+    @PutMapping("/{id}/coupon")
+    BookingResponse applyCoupon(@PathVariable UUID id, @Valid @RequestBody CouponRequest request, CurrentUser user) {
+        return BookingResponse.from(holdService.changeCoupon(id, user.id(), request.code()));
+    }
+
+    @DeleteMapping("/{id}/coupon")
+    BookingResponse removeCoupon(@PathVariable UUID id, CurrentUser user) {
+        return BookingResponse.from(holdService.changeCoupon(id, user.id(), null));
+    }
+
+    record CouponRequest(@NotBlank @Size(max = 30) String code) {
     }
 
     @PostMapping("/{id}/release")

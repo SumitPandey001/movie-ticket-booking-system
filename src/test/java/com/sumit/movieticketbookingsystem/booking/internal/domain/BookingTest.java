@@ -36,8 +36,8 @@ class BookingTest {
     void seatAmountsMustAddUpToTheTotal() {
         PriceTotals wrong = new PriceTotals(40000, 0, 4000, 8000, 52000);
 
-        assertThatThrownBy(() -> Booking.hold(UUID.randomUUID(), "BK000001", UUID.randomUUID(), 1, NOW.plusSeconds(86400),
-                EXPIRES, SEATS, wrong, NOW))
+        assertThatThrownBy(() -> Booking.hold(UUID.randomUUID(), "BK000001", UUID.randomUUID(), 1,
+                NOW.plusSeconds(86400), EXPIRES, SEATS, wrong, null, NOW))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new PriceTotals(100, 0, 10, 10, 999)).isInstanceOf(IllegalArgumentException.class);
     }
@@ -77,6 +77,6 @@ class BookingTest {
 
     private static Booking hold() {
         return Booking.hold(UUID.randomUUID(), "BK000001", UUID.randomUUID(), 1, NOW.plusSeconds(86400), EXPIRES,
-                SEATS, TOTALS, NOW);
+                SEATS, TOTALS, null, NOW);
     }
 }

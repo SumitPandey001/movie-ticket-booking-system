@@ -87,6 +87,6 @@ class BookingRepositoryIT {
     private Booking hold(UUID userId) {
         Instant now = Instant.now();
         return Booking.hold(UUID.randomUUID(), "BK" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(),
-                userId, showId, showStart, now.plusSeconds(480), SEATS, TOTALS, now);
+                userId, showId, showStart, now.plusSeconds(480), SEATS, TOTALS, null, now);
     }
 }

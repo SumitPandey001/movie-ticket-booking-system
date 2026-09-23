@@ -1,5 +1,6 @@
 package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
+import com.sumit.movieticketbookingsystem.shared.error.InvalidStateException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -15,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * A customer's claim on some seats of one show, from the hold through payment to cancellation.
@@ -51,6 +53,8 @@ public class Booking {
 
     private long totalPaise;
 
+    private String couponCode;
+
     @ElementCollection
     @CollectionTable(name = "booking_seat", joinColumns = @JoinColumn(name = "booking_id"))
     private Set<BookingSeat> seats = new HashSet<>();
@@ -67,15 +71,13 @@ public class Booking {
     protected Booking() {
     }
 
+    /** @param couponCode the coupon the price includes, or null */
     public static Booking hold(UUID id, String bookingRef, UUID userId, long showId, Instant showStartTime,
-            Instant holdExpiresAt, List<BookingSeat> seats, PriceTotals totals, Instant now) {
+            Instant holdExpiresAt, List<BookingSeat> seats, PriceTotals totals, String couponCode, Instant now) {
         if (seats.isEmpty()) {
             throw new IllegalArgumentException("A booking needs at least one seat");
         }
-        long seatTotal = seats.stream().mapToLong(BookingSeat::amountPaise).sum();
-        if (seatTotal != totals.total()) {
-            throw new IllegalArgumentException("Seat amounts add up to " + seatTotal + ", not " + totals.total());
-        }
+        requireSeatsAddUp(seats, totals);
 
         Booking booking = new Booking();
         booking.id = id;
@@ -87,13 +89,27 @@ public class Booking {
         booking.holdExpiresAt = holdExpiresAt;
         booking.seats.addAll(seats);
         booking.seatCount = seats.size();
-        booking.subtotalPaise = totals.subtotal();
-        booking.discountPaise = totals.discount();
-        booking.feePaise = totals.fee();
-        booking.taxPaise = totals.tax();
-        booking.totalPaise = totals.total();
+        booking.setPrice(totals, couponCode);
         booking.createdAt = now;
         return booking;
+    }
+
+    /**
+     * Replaces the frozen price after the customer changes the coupon on a live hold. Same seats, new amounts.
+     */
+    public void reprice(List<BookingSeat> newSeats, PriceTotals totals, String newCouponCode) {
+        if (status != BookingStatus.HELD) {
+            throw new InvalidStateException("Only a held booking can change its coupon; this one is " + status);
+        }
+        Set<Long> current = seats.stream().map(BookingSeat::layoutSeatId).collect(Collectors.toSet());
+        Set<Long> replacement = newSeats.stream().map(BookingSeat::layoutSeatId).collect(Collectors.toSet());
+        if (!current.equals(replacement)) {
+            throw new IllegalArgumentException("A new price must cover exactly the booking's seats");
+        }
+        requireSeatsAddUp(newSeats, totals);
+        seats.clear();
+        seats.addAll(newSeats);
+        setPrice(totals, newCouponCode);
     }
 
     /** The customer lets the hold go before it runs out. */
@@ -108,6 +124,22 @@ public class Booking {
 
     public boolean isHoldExpired(Instant now) {
         return status == BookingStatus.HELD && !now.isBefore(holdExpiresAt);
+    }
+
+    private void setPrice(PriceTotals totals, String coupon) {
+        subtotalPaise = totals.subtotal();
+        discountPaise = totals.discount();
+        feePaise = totals.fee();
+        taxPaise = totals.tax();
+        totalPaise = totals.total();
+        couponCode = coupon;
+    }
+
+    private static void requireSeatsAddUp(List<BookingSeat> seats, PriceTotals totals) {
+        long seatTotal = seats.stream().mapToLong(BookingSeat::amountPaise).sum();
+        if (seatTotal != totals.total()) {
+            throw new IllegalArgumentException("Seat amounts add up to " + seatTotal + ", not " + totals.total());
+        }
     }
 
     private void close(BookingStatus terminal, Instant now) {
@@ -141,6 +173,10 @@ public class Booking {
 
     public Instant getHoldExpiresAt() {
         return holdExpiresAt;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
     }
 
     public PriceTotals getTotals() {

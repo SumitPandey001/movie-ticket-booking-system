@@ -8,6 +8,7 @@ import com.sumit.movieticketbookingsystem.booking.internal.domain.PriceTotals;
 import com.sumit.movieticketbookingsystem.booking.internal.persistence.BookingRepository;
 import com.sumit.movieticketbookingsystem.inventory.HeldSeat;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
+import com.sumit.movieticketbookingsystem.pricing.CouponApi;
 import com.sumit.movieticketbookingsystem.pricing.PriceQuote;
 import com.sumit.movieticketbookingsystem.pricing.PricingApi;
 import com.sumit.movieticketbookingsystem.pricing.PricingRequest;
@@ -36,8 +37,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Holding seats, letting them go, and looking up a customer's booking. A hold is one transaction across
- * inventory, pricing and booking, so it either happens completely or not at all.
+ * Holding seats, letting them go, changing the coupon on a hold, and looking up a customer's booking. A hold is one
+ * transaction across inventory, pricing and booking, so it either happens completely or not at all.
  */
 @Service
 public class HoldService {
@@ -48,22 +49,25 @@ public class HoldService {
     private final ShowApi shows;
     private final InventoryApi inventory;
     private final PricingApi pricing;
+    private final CouponApi coupons;
     private final BookingRefGenerator refs;
     private final BookingProperties properties;
     private final Clock clock;
 
     HoldService(BookingRepository bookings, ShowApi shows, InventoryApi inventory, PricingApi pricing,
-            BookingRefGenerator refs, BookingProperties properties, Clock clock) {
+            CouponApi coupons, BookingRefGenerator refs, BookingProperties properties, Clock clock) {
         this.bookings = bookings;
         this.shows = shows;
         this.inventory = inventory;
         this.pricing = pricing;
+        this.coupons = coupons;
         this.refs = refs;
         this.properties = properties;
         this.clock = clock;
     }
 
-    public record CreateHold(UUID userId, long showId, Set<Long> seatIds) {
+    /** @param couponCode optional */
+    public record CreateHold(UUID userId, long showId, Set<Long> seatIds, String couponCode) {
     }
 
     @Transactional
@@ -81,16 +85,16 @@ public class HoldService {
         UUID bookingId = UUID.randomUUID();
         List<HeldSeat> held = inventory.hold(show.showId(), command.seatIds(), bookingId,
                 now.plus(properties.holdDuration()), now);
-        PriceQuote quote = pricing.quote(new PricingRequest(
-                new ShowPricing(show.showId(), show.movieId(), show.cityId(), show.theaterId(), show.showDate()),
-                command.userId(),
-                held.stream().map(seat -> new SeatToPrice(seat.layoutSeatId(), seat.categoryId())).toList(),
-                null));
+        List<SeatToBook> seats = held.stream()
+                .map(seat -> new SeatToBook(seat.layoutSeatId(), seat.label(), seat.categoryId()))
+                .toList();
+        PriceQuote quote = quote(show, command.userId(), seats, command.couponCode());
+        reserveCoupon(quote, command.userId(), bookingId);
 
         // ponytail: a booking_ref clash (1 in ~10^9 per hold) fails this hold with a 500; retry with a fresh
         // ref here if that ever shows up in the logs
         Booking booking = Booking.hold(bookingId, refs.next(), command.userId(), show.showId(), show.startTime(),
-                now.plus(properties.holdDuration()), seats(held, quote), totals(quote), now);
+                now.plus(properties.holdDuration()), bookingSeats(seats, quote), totals(quote), quote.coupon(), now);
         try {
             return bookings.saveAndFlush(booking);
         } catch (DataIntegrityViolationException e) {
@@ -101,11 +105,32 @@ public class HoldService {
         }
     }
 
+    /**
+     * Swaps the coupon on a live hold, or removes it when {@code couponCode} is null. The seats and the hold's
+     * expiry stay as they are; only the price changes.
+     */
+    @Transactional
+    public Booking changeCoupon(UUID bookingId, UUID userId, String couponCode) {
+        Booking booking = ownBooking(bookingId, userId);
+        if (booking.isHoldExpired(Instant.now(clock))) {
+            throw new HoldExpiredException(bookingId);
+        }
+        coupons.release(bookingId);
+        List<SeatToBook> seats = booking.getSeats().stream()
+                .map(seat -> new SeatToBook(seat.layoutSeatId(), seat.seatLabel(), seat.categoryId()))
+                .toList();
+        PriceQuote quote = quote(shows.show(booking.getShowId()), userId, seats, couponCode);
+        reserveCoupon(quote, userId, bookingId);
+        booking.reprice(bookingSeats(seats, quote), totals(quote), quote.coupon());
+        return booking;
+    }
+
     @Transactional
     public Booking release(UUID bookingId, UUID userId) {
         Booking booking = ownBooking(bookingId, userId);
         booking.release(Instant.now(clock));
         inventory.releaseHeld(booking.getShowId(), booking.getId());
+        coupons.release(booking.getId());
         return booking;
     }
 
@@ -130,7 +155,22 @@ public class HoldService {
         }
         existing.expire(now);
         inventory.releaseHeld(showId, existing.getId());
+        coupons.release(existing.getId());
         bookings.saveAndFlush(existing);
+    }
+
+    private PriceQuote quote(ShowDetails show, UUID userId, List<SeatToBook> seats, String couponCode) {
+        ShowPricing showPricing = new ShowPricing(show.showId(), show.movieId(), show.cityId(), show.theaterId(),
+                show.showDate());
+        return pricing.quote(new PricingRequest(showPricing, userId,
+                seats.stream().map(seat -> new SeatToPrice(seat.layoutSeatId(), seat.categoryId())).toList(),
+                couponCode));
+    }
+
+    private void reserveCoupon(PriceQuote quote, UUID userId, UUID bookingId) {
+        if (quote.coupon() != null) {
+            coupons.reserve(quote.coupon(), userId, bookingId, quote.discountPaise());
+        }
     }
 
     // Someone else's booking is reported as not found, so the API never confirms that it exists.
@@ -140,10 +180,10 @@ public class HoldService {
                 .orElseThrow(() -> new NotFoundException("Booking", bookingId));
     }
 
-    private static List<BookingSeat> seats(List<HeldSeat> held, PriceQuote quote) {
+    private static List<BookingSeat> bookingSeats(List<SeatToBook> seats, PriceQuote quote) {
         Map<Long, SeatPriceLine> lines = quote.lines().stream()
                 .collect(Collectors.toMap(SeatPriceLine::layoutSeatId, Function.identity()));
-        return held.stream()
+        return seats.stream()
                 .map(seat -> {
                     SeatPriceLine line = lines.get(seat.layoutSeatId());
                     return new BookingSeat(seat.layoutSeatId(), seat.label(), seat.categoryId(), line.basePaise(),
@@ -155,5 +195,8 @@ public class HoldService {
     private static PriceTotals totals(PriceQuote quote) {
         return new PriceTotals(quote.subtotalPaise(), quote.discountPaise(), quote.feePaise(), quote.taxPaise(),
                 quote.totalPaise());
+    }
+
+    private record SeatToBook(long layoutSeatId, String label, long categoryId) {
     }
 }

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 record BookingResponse(UUID bookingId, String bookingRef, BookingStatus status, long showId, Instant showStartTime,
-                       Instant holdExpiresAt, List<Seat> seats, Price price) {
+                       Instant holdExpiresAt, List<Seat> seats, Price price, String coupon) {
 
     static BookingResponse from(Booking booking) {
         PriceTotals totals = booking.getTotals();
@@ -18,7 +18,8 @@ record BookingResponse(UUID bookingId, String bookingRef, BookingStatus status, 
                 booking.getSeats().stream()
                         .map(seat -> new Seat(seat.layoutSeatId(), seat.seatLabel(), seat.amountPaise()))
                         .toList(),
-                new Price(totals.subtotal(), totals.discount(), totals.fee(), totals.tax(), totals.total()));
+                new Price(totals.subtotal(), totals.discount(), totals.fee(), totals.tax(), totals.total()),
+                booking.getCouponCode());
     }
 
     record Seat(long seatId, String label, long amountPaise) {

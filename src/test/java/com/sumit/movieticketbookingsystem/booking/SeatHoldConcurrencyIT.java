@@ -58,7 +58,7 @@ class SeatHoldConcurrencyIT {
                 pool.submit(() -> {
                     start.await();
                     try {
-                        holdService.createHold(new CreateHold(customer, show.id(), seats));
+                        holdService.createHold(new CreateHold(customer, show.id(), seats, null));
                         wins.incrementAndGet();
                     } catch (SeatsUnavailableException e) {
                         conflicts.incrementAndGet();
