@@ -1,0 +1,1 @@
+Booking [(${bookingRef})] confirmed: [(${movieTitle})], [(${showTime})] at [(${theaterName})]. Seats [(${seats})].

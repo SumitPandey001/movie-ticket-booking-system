@@ -23,6 +23,7 @@ class ShowFacade implements ShowApi {
     public ShowDetails show(long showId) {
         Show show = shows.findById(showId).orElseThrow(() -> new NotFoundException("Show", showId));
         return new ShowDetails(show.getId(), show.getMovieId(), show.getTheaterId(), show.getCityId(),
-                show.getLayoutId(), show.getShowDate(), show.getStartTime(), show.getStatus() == ShowStatus.OPEN);
+                show.getLayoutId(), show.getShowDate(), show.getStartTime(), show.getStatus() == ShowStatus.OPEN,
+                show.getRefundPolicyId());
     }
 }

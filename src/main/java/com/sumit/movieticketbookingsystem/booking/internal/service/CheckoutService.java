@@ -4,6 +4,7 @@ import com.sumit.movieticketbookingsystem.booking.internal.domain.Booking;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingSeat;
 import com.sumit.movieticketbookingsystem.booking.internal.domain.BookingStatus;
 import com.sumit.movieticketbookingsystem.booking.internal.persistence.BookingRepository;
+import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicyService;
 import com.sumit.movieticketbookingsystem.inventory.InventoryApi;
 import com.sumit.movieticketbookingsystem.inventory.SeatsUnavailableException;
 import com.sumit.movieticketbookingsystem.payment.InitiatePayment;
@@ -36,17 +37,20 @@ public class CheckoutService {
     private final PaymentApi payments;
     private final InventoryApi inventory;
     private final CouponApi coupons;
+    private final RefundPolicyService refundPolicies;
     private final BookingEvents events;
     private final TransactionTemplate tx;
     private final Duration paymentWindow;
     private final Clock clock;
 
     CheckoutService(BookingRepository bookings, PaymentApi payments, InventoryApi inventory, CouponApi coupons,
-            BookingEvents events, TransactionTemplate tx, BookingProperties properties, Clock clock) {
+            RefundPolicyService refundPolicies, BookingEvents events, TransactionTemplate tx,
+            BookingProperties properties, Clock clock) {
         this.bookings = bookings;
         this.payments = payments;
         this.inventory = inventory;
         this.coupons = coupons;
+        this.refundPolicies = refundPolicies;
         this.events = events;
         this.tx = tx;
         this.paymentWindow = properties.paymentWindow();
@@ -114,7 +118,7 @@ public class CheckoutService {
                 booking.getSeats().stream().map(BookingSeat::layoutSeatId).collect(Collectors.toSet()),
                 bookingId, now);
         coupons.consume(bookingId);
-        booking.confirm(now);
+        booking.confirm(refundPolicies.snapshotForShow(booking.getShowId()), now);
         events.confirmed(booking);
         return booking;
     }

@@ -38,7 +38,7 @@ class ShowAdminController {
     ShowResponse create(@Valid @RequestBody CreateShowRequest request) {
         return ShowResponse.from(showService.create(new CreateShow(request.movieId(), request.screenId(),
                 request.startTime().toInstant(), request.language(), request.format(), request.showDate(),
-                request.priceOverridesOrEmpty())));
+                request.priceOverridesOrEmpty(), request.refundPolicyId())));
     }
 
     @GetMapping
