@@ -2,14 +2,13 @@ package com.sumit.movieticketbookingsystem.pricing.internal;
 
 import com.sumit.movieticketbookingsystem.pricing.PriceQuote;
 import com.sumit.movieticketbookingsystem.pricing.PricingApi;
-import com.sumit.movieticketbookingsystem.pricing.SeatToPrice;
+import com.sumit.movieticketbookingsystem.pricing.PricingRequest;
 import com.sumit.movieticketbookingsystem.pricing.ShowPricing;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -76,8 +75,8 @@ class PricingFacade implements PricingApi {
 
     @Override
     @Transactional(readOnly = true)
-    public PriceQuote quote(ShowPricing show, List<SeatToPrice> seats) {
-        return calculator.quote(show, seats);
+    public PriceQuote quote(PricingRequest request) {
+        return calculator.quote(request);
     }
 
     // ponytail: price_from is worked out when a show's prices are set, so a pricing rule added or changed later

@@ -19,6 +19,7 @@ public enum ErrorCode {
     ACTIVE_HOLD_EXISTS(HttpStatus.CONFLICT, "Active hold exists"),
     IDEMPOTENCY_KEY_REUSED(HttpStatus.CONFLICT, "Idempotency key reused"),
     IDEMPOTENCY_IN_PROGRESS(HttpStatus.CONFLICT, "Request still in progress"),
+    COUPON_INVALID(HttpStatus.UNPROCESSABLE_CONTENT, "Coupon can't be used"),
     SHOW_NOT_BOOKABLE(HttpStatus.UNPROCESSABLE_CONTENT, "Show not bookable"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
 

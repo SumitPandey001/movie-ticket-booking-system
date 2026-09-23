@@ -9,6 +9,7 @@ final class ShowPricings {
     }
 
     static ShowPricing of(Show show) {
-        return new ShowPricing(show.getId(), show.getCityId(), show.getTheaterId(), show.getShowDate());
+        return new ShowPricing(show.getId(), show.getMovieId(), show.getCityId(), show.getTheaterId(),
+                show.getShowDate());
     }
 }

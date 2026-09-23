@@ -15,5 +15,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     @EntityGraph(attributePaths = "scopes")
     List<Coupon> findAllByOrderByIdDesc();
 
+    @EntityGraph(attributePaths = "scopes")
+    Optional<Coupon> findByCode(String code);
+
     boolean existsByCode(String code);
 }
