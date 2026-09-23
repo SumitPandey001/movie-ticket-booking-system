@@ -39,7 +39,8 @@ class TheaterPriceService {
     @Transactional(readOnly = true)
     public Map<String, Long> prices(long theaterId) {
         Map<String, Long> byCode = new LinkedHashMap<>();
-        prices.theaterPrices(theaterId).forEach((categoryId, price) -> byCode.put(categories.codeOf(categoryId), price));
+        prices.theaterPrices(theaterId)
+                .forEach((categoryId, price) -> byCode.put(categories.codeOf(categoryId), price));
         return byCode;
     }
 }

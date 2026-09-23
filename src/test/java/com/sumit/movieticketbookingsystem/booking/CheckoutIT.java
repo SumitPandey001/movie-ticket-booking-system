@@ -21,11 +21,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.sumit.movieticketbookingsystem.ApiRequests.asAdmin;
 import static com.sumit.movieticketbookingsystem.ApiRequests.asCustomer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -151,6 +153,23 @@ class CheckoutIT {
         pay(bookingId, UPI, "SUCCESS", UUID.randomUUID())         // a new attempt, not a retry
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INVALID_STATE"));
+    }
+
+    @Test
+    void aPriceChangeAfterTheHoldDoesntChangeWhatTheCustomerPays() throws Exception {
+        String bookingId = hold(null, "B3");
+        long held = jdbc.sql("SELECT total_paise FROM booking WHERE id = ?")
+                .param(UUID.fromString(bookingId)).query(Long.class).single();
+
+        mvc.perform(asAdmin(put("/api/v1/admin/shows/{id}/prices", show.id()))
+                        .content("{\"prices\": {\"PREMIUM\": 90000}}"))
+                .andExpect(status().isOk());
+        pay(bookingId, UPI, "SUCCESS", UUID.randomUUID())
+                .andExpect(jsonPath("$.booking.status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.booking.price.totalPaise").value(held));
+
+        assertThat(jdbc.sql("SELECT amount_paise FROM payment WHERE booking_id = ? AND status = 'SUCCESS'")
+                .param(UUID.fromString(bookingId)).query(Long.class).single()).isEqualTo(held);
     }
 
     private String hold(String couponCode, String... labels) throws Exception {

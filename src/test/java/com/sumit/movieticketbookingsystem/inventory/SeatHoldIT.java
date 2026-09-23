@@ -179,8 +179,9 @@ class SeatHoldIT {
 
     private void insertBooking(UUID bookingId) {
         jdbc.sql("""
-                        INSERT INTO booking (id, booking_ref, user_id, show_id, show_start_time, status, hold_expires_at,
-                                             seat_count, subtotal_paise, fee_paise, tax_paise, total_paise, created_at)
+                        INSERT INTO booking (id, booking_ref, user_id, show_id, show_start_time, status,
+                                             hold_expires_at, seat_count, subtotal_paise, fee_paise, tax_paise,
+                                             total_paise, created_at)
                         VALUES (?, ?, ?, ?, ?, 'HELD', ?, 1, 20000, 2000, 3960, 25960, now())
                         """)
                 .params(bookingId, bookingId.toString().substring(0, 12), UUID.randomUUID(), showId,

@@ -75,7 +75,8 @@ class PricingRuleIT {
     @Test
     void theMostSpecificRuleWins() throws Exception {
         BookableShow saturday = fixtures.openShowOn(TestDates.saturday(2));
-        long theaterId = jdbc.sql("SELECT theater_id FROM show WHERE id = ?").param(saturday.id()).query(Long.class).single();
+        long theaterId = jdbc.sql("SELECT theater_id FROM show WHERE id = ?")
+                .param(saturday.id()).query(Long.class).single();
         long cityId = jdbc.sql("SELECT city_id FROM show WHERE id = ?").param(saturday.id()).query(Long.class).single();
 
         createRule("""

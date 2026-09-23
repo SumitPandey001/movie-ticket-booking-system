@@ -24,7 +24,7 @@ public record CurrentUser(UUID id, Role role, String name, String email, String 
         if (attributes == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(
-                (CurrentUser) attributes.getAttribute(CurrentUserInterceptor.ATTRIBUTE, RequestAttributes.SCOPE_REQUEST));
+        Object user = attributes.getAttribute(CurrentUserInterceptor.ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+        return Optional.ofNullable((CurrentUser) user);
     }
 }

@@ -1,0 +1,27 @@
+### Create a city (admin)
+POST {{baseUrl}}/api/v1/admin/cities
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Bengaluru", "state": "Karnataka"}
+
+> {% client.global.set("cityId", response.body.id); %}
+
+### Rename it
+PUT {{baseUrl}}/api/v1/admin/cities/{{cityId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Bangalore", "state": "Karnataka", "timezone": "Asia/Kolkata"}
+
+### List active cities (customer)
+GET {{baseUrl}}/api/v1/cities
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+
+### Deactivate it (admin)
+POST {{baseUrl}}/api/v1/admin/cities/{{cityId}}/deactivate
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN

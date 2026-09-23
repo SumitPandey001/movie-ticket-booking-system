@@ -1,0 +1,132 @@
+# Needs {{showId}} of an OPEN show; seat ids come from GET /shows/{{showId}}/seats.
+
+### Hold seats (send it twice: the same Idempotency-Key replays the first answer)
+POST {{baseUrl}}/api/v1/bookings
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+Idempotency-Key: 7b0c1d2e-3f40-4a5b-8c6d-7e8f9a0b1c2d
+
+{"showId": {{showId}}, "seatIds": [1, 2], "couponCode": "FIRST50"}
+
+> {% client.global.set("bookingId", response.body.bookingId); %}
+
+### Swap the coupon on the hold
+PUT {{baseUrl}}/api/v1/bookings/{{bookingId}}/coupon
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+
+{"code": "WEEKEND10"}
+
+### Remove the coupon
+DELETE {{baseUrl}}/api/v1/bookings/{{bookingId}}/coupon
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+
+### The booking
+GET {{baseUrl}}/api/v1/bookings/{{bookingId}}
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+
+### Someone else holding the same seats -> 409 SEATS_UNAVAILABLE
+POST {{baseUrl}}/api/v1/bookings
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c002
+X-User-Role: CUSTOMER
+Idempotency-Key: {{$uuid}}
+
+{"showId": {{showId}}, "seatIds": [2, 3]}
+
+### Let the hold go
+POST {{baseUrl}}/api/v1/bookings/{{bookingId}}/release
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+
+### Pay for the hold (UPI). "simulate" can be SUCCESS or FAILURE; a decline is a normal 200 with paymentStatus FAILED
+POST {{baseUrl}}/api/v1/bookings/{{bookingId}}/payments
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+Idempotency-Key: {{$uuid}}
+
+{"details": {"type": "UPI", "vpa": "asha@okbank"}, "simulate": "SUCCESS"}
+
+### Or by card (4242 4242 4242 4242 passes the Luhn check)
+POST {{baseUrl}}/api/v1/bookings/{{bookingId}}/payments
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+Idempotency-Key: {{$uuid}}
+
+{"details": {"type": "CARD", "number": "4242 4242 4242 4242", "expiryMonth": 12, "expiryYear": 2030,
+             "cvv": "123", "holderName": "Asha Rao"}}
+
+### A slow gateway: 202 PAYMENT_PENDING now, CONFIRMED about 15 seconds later (booking.payment.simulated-delay)
+POST {{baseUrl}}/api/v1/bookings/{{bookingId}}/payments
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+Idempotency-Key: {{$uuid}}
+
+{"details": {"type": "UPI", "vpa": "asha@okbank"}, "simulate": "DELAYED"}
+
+### Refund preview for one seat (leave seatIds out for every active seat)
+GET {{baseUrl}}/api/v1/bookings/{{bookingId}}/refund-quote?seatIds=1
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+
+### Cancel that seat; the refund matches the preview to the paisa. Body {} cancels everything left.
+POST {{baseUrl}}/api/v1/bookings/{{bookingId}}/cancellations
+Content-Type: application/json
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+Idempotency-Key: 2c1d0e9f-8a7b-4c6d-9e5f-4a3b2c1d0e9f
+
+{"seatIds": [1]}
+
+### Booking history: UPCOMING, PAST or CANCELLED, 10 to a page
+GET {{baseUrl}}/api/v1/bookings?view=UPCOMING&page=0&size=10
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001
+
+### Booking details: seats, cancellations, payment and where each refund stands
+GET {{baseUrl}}/api/v1/bookings/{{bookingId}}
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+X-User-Name: Asha
+X-User-Email: asha@example.com
+X-User-Phone: +919800000001

@@ -135,7 +135,8 @@ class ShowAdminIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Screen " + screenWithoutLayout + " has no active seat layout"));
 
-        mvc.perform(asAdmin(post("/api/v1/admin/shows")).content(showJson(screenId, sixPm, sixPm.toLocalDate().plusDays(2))))
+        mvc.perform(asAdmin(post("/api/v1/admin/shows"))
+                        .content(showJson(screenId, sixPm, sixPm.toLocalDate().plusDays(2))))
                 .andExpect(status().isBadRequest());
     }
 

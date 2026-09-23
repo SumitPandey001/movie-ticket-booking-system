@@ -117,7 +117,8 @@ class IdempotencyIT {
     void anUnexpectedFailureForgetsTheKeySoTheRetryRuns() throws Exception {
         List<Map<String, Object>> prices = jdbc.sql("SELECT * FROM show_category_price WHERE show_id = ?")
                 .param(show.id()).query().listOfRows();
-        jdbc.sql("DELETE FROM show_category_price WHERE show_id = ?").param(show.id()).update();   // pricing now blows up
+        // pricing now blows up
+        jdbc.sql("DELETE FROM show_category_price WHERE show_id = ?").param(show.id()).update();
         String key = UUID.randomUUID().toString();
         hold(customer, key, "A2").andExpect(status().isInternalServerError());
 

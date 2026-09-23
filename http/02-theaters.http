@@ -1,0 +1,65 @@
+# Run "Create a city" in cities.http first; it sets {{cityId}}.
+
+### Create a theater
+POST {{baseUrl}}/api/v1/admin/theaters
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"cityId": {{cityId}}, "name": "PVR Forum", "area": "Koramangala", "address": "Hosur Road"}
+
+> {% client.global.set("theaterId", response.body.id); %}
+
+### Add a screen
+POST {{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/screens
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Audi 1"}
+
+> {% client.global.set("screenId", response.body.id); %}
+
+### Rename the screen
+PUT {{baseUrl}}/api/v1/admin/screens/{{screenId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Audi 1 (IMAX)"}
+
+### Default prices per seat category (paise)
+PUT {{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/prices
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"prices": {"REGULAR": 30000, "PREMIUM": 36000, "RECLINER": 60000}}
+
+### Current default prices
+GET {{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/prices
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### Theater with its screens
+GET {{baseUrl}}/api/v1/admin/theaters/{{theaterId}}
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### Update the theater
+PUT {{baseUrl}}/api/v1/admin/theaters/{{theaterId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "PVR Forum Mall", "area": "Koramangala", "address": "Hosur Road"}
+
+### Deactivate the screen
+POST {{baseUrl}}/api/v1/admin/screens/{{screenId}}/deactivate
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### Deactivate the theater
+POST {{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/deactivate
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
