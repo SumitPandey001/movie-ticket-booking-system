@@ -14,6 +14,7 @@ public enum ErrorCode {
     NOT_FOUND(HttpStatus.NOT_FOUND, "Not found"),
     ALREADY_EXISTS(HttpStatus.CONFLICT, "Already exists"),
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid state"),
+    SHOW_OVERLAP(HttpStatus.CONFLICT, "Show overlaps another show"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
 
     private final HttpStatus status;

@@ -42,6 +42,24 @@ public class CatalogFixtures {
         return screen(theater(city(), uniqueName("Theater")), "Audi 1");
     }
 
+    /** A fresh screen with an active 2 x 5 layout (A1-A5 regular, B1-B5 premium). */
+    public long screenWithActiveLayout() throws Exception {
+        long screenId = screen();
+        long layoutId = create("/api/v1/admin/screens/" + screenId + "/layouts", """
+                {"rows": [{"label": "A", "segments": [{"from": 1, "to": 5, "category": "REGULAR"}]},
+                          {"label": "B", "segments": [{"from": 1, "to": 5, "category": "PREMIUM"}]}]}
+                """);
+        mvc.perform(asAdmin(post("/api/v1/admin/layouts/{id}/activate", layoutId)))
+                .andExpect(status().isOk());
+        return screenId;
+    }
+
+    public long movie(int durationMin) throws Exception {
+        return create("/api/v1/admin/movies", """
+                {"title": "%s", "durationMin": %d, "certification": "UA"}
+                """.formatted(uniqueName("Movie"), durationMin));
+    }
+
     public long create(String path, String json) throws Exception {
         return idOf(mvc.perform(asAdmin(post(path)).content(json))
                 .andExpect(status().isCreated())
