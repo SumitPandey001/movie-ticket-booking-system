@@ -6,6 +6,7 @@ import com.sumit.movieticketbookingsystem.catalog.LayoutView;
 import com.sumit.movieticketbookingsystem.catalog.MovieInfo;
 import com.sumit.movieticketbookingsystem.catalog.ScreenInfo;
 import com.sumit.movieticketbookingsystem.catalog.SeatCategoryInfo;
+import com.sumit.movieticketbookingsystem.catalog.TheaterSummary;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.City;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.LayoutStatus;
 import com.sumit.movieticketbookingsystem.catalog.internal.domain.Movie;
@@ -24,7 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -74,9 +79,21 @@ class CatalogFacade implements CatalogApi {
 
     @Override
     public MovieInfo movie(long movieId) {
-        Movie movie = movies.findById(movieId).orElseThrow(() -> new NotFoundException("Movie", movieId));
-        return new MovieInfo(movie.getId(), movie.getTitle(), Duration.ofMinutes(movie.getDurationMinutes()),
-                movie.getCertification().name(), movie.isActive());
+        return movieInfo(movies.findById(movieId).orElseThrow(() -> new NotFoundException("Movie", movieId)));
+    }
+
+    @Override
+    public Map<Long, MovieInfo> movies(Collection<Long> movieIds) {
+        return movies.findAllById(movieIds).stream()
+                .map(CatalogFacade::movieInfo)
+                .collect(Collectors.toMap(MovieInfo::movieId, Function.identity()));
+    }
+
+    @Override
+    public Map<Long, TheaterSummary> theaters(Collection<Long> theaterIds) {
+        return theaters.findAllById(theaterIds).stream()
+                .map(theater -> new TheaterSummary(theater.getId(), theater.getName(), theater.getArea()))
+                .collect(Collectors.toMap(TheaterSummary::theaterId, Function.identity()));
     }
 
     @Override
@@ -84,6 +101,11 @@ class CatalogFacade implements CatalogApi {
         return categories.findAll(Sort.by("sortOrder")).stream()
                 .map(category -> new SeatCategoryInfo(category.getId(), category.getCode(), category.getName()))
                 .toList();
+    }
+
+    private static MovieInfo movieInfo(Movie movie) {
+        return new MovieInfo(movie.getId(), movie.getTitle(), Duration.ofMinutes(movie.getDurationMinutes()),
+                movie.getCertification().name(), movie.isActive());
     }
 
     private City findCity(long cityId) {

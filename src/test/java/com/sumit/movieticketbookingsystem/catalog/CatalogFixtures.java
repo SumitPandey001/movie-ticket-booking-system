@@ -38,19 +38,32 @@ public class CatalogFixtures {
                 """.formatted(name));
     }
 
-    /** A fresh screen in a fresh theater and city. The theater charges ₹200 / ₹300 / ₹500 by default. */
-    public long screen() throws Exception {
-        long theaterId = theater(city(), uniqueName("Theater"));
+    /** A theater that charges ₹200 / ₹300 / ₹500 by default for REGULAR / PREMIUM / RECLINER. */
+    public long pricedTheater(long cityId, String name) throws Exception {
+        long theaterId = theater(cityId, name);
         mvc.perform(asAdmin(put("/api/v1/admin/theaters/{id}/prices", theaterId)).content("""
                         {"prices": {"REGULAR": 20000, "PREMIUM": 30000, "RECLINER": 50000}}
                         """))
                 .andExpect(status().isOk());
-        return screen(theaterId, "Audi 1");
+        return theaterId;
+    }
+
+    /** A fresh screen in a fresh priced theater and city. */
+    public long screen() throws Exception {
+        return screen(pricedTheater(city(), uniqueName("Theater")), "Audi 1");
     }
 
     /** A fresh screen with an active 2 x 5 layout (A1-A5 regular, B1-B5 premium). */
     public long screenWithActiveLayout() throws Exception {
-        long screenId = screen();
+        return activateSmallLayout(screen());
+    }
+
+    /** Another screen with the same 2 x 5 layout in an existing (priced) theater. */
+    public long screenWithActiveLayout(long theaterId) throws Exception {
+        return activateSmallLayout(screen(theaterId, uniqueName("Audi")));
+    }
+
+    private long activateSmallLayout(long screenId) throws Exception {
         long layoutId = create("/api/v1/admin/screens/" + screenId + "/layouts", """
                 {"rows": [{"label": "A", "segments": [{"from": 1, "to": 5, "category": "REGULAR"}]},
                           {"label": "B", "segments": [{"from": 1, "to": 5, "category": "PREMIUM"}]}]}

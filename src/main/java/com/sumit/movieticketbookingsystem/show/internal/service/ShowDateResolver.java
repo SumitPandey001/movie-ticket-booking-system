@@ -27,15 +27,19 @@ class ShowDateResolver {
      * @param requested the admin's choice, if any; only the calendar date or the day before make sense
      */
     LocalDate showDate(Instant start, ZoneId zone, LocalDate requested) {
-        ZonedDateTime local = start.atZone(zone);
-        LocalDate calendarDate = local.toLocalDate();
-        if (requested != null) {
-            if (!requested.equals(calendarDate) && !requested.equals(calendarDate.minusDays(1))) {
-                throw new ValidationException("Show date " + requested + " must be " + calendarDate
-                        + " or the day before");
-            }
-            return requested;
+        if (requested == null) {
+            return listingDate(start, zone);
         }
-        return local.toLocalTime().isBefore(lateNightCutoff) ? calendarDate.minusDays(1) : calendarDate;
+        LocalDate calendarDate = start.atZone(zone).toLocalDate();
+        if (!requested.equals(calendarDate) && !requested.equals(calendarDate.minusDays(1))) {
+            throw new ValidationException("Show date " + requested + " must be " + calendarDate + " or the day before");
+        }
+        return requested;
+    }
+
+    /** The listing date a moment belongs to; at 00:30 it's still "yesterday" for the browse page. */
+    LocalDate listingDate(Instant at, ZoneId zone) {
+        ZonedDateTime local = at.atZone(zone);
+        return local.toLocalTime().isBefore(lateNightCutoff) ? local.toLocalDate().minusDays(1) : local.toLocalDate();
     }
 }
