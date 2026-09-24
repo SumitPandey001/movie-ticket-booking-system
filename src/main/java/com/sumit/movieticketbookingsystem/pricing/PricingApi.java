@@ -12,15 +12,12 @@ public interface PricingApi {
 
     /**
      * Gives the show a price for each of its seat categories: the theater's default, or the admin's override.
-     *
-     * @return the lowest price including the day's surcharge, for "from ₹..." on the browse page
+     * Returns the lowest price including the day's surcharge, for "from ₹..." on the browse page.
      */
     long initializeShowPrices(ShowPricing show, Set<Long> categoryIds, Map<String, Long> overrides);
 
     /**
-     * Changes some of the show's category prices.
-     *
-     * @return the show's new lowest price including the day's surcharge
+     * Changes some of the show's category prices and returns its new lowest price, day surcharge included.
      */
     long overrideShowPrices(ShowPricing show, Map<String, Long> prices);
 
@@ -29,9 +26,8 @@ public interface PricingApi {
 
     /**
      * Prices the given seats: tier, day surcharge, coupon discount, convenience fee and GST, one line per seat.
-     * Only checks the coupon; using it up is a separate step.
-     *
-     * @throws CouponInvalidException if a coupon code is given but can't be used for this order
+     * Only checks the coupon; using it up is a separate step. Throws CouponInvalidException if a coupon code is
+     * given but can't be used for this order.
      */
     PriceQuote quote(PricingRequest request);
 }

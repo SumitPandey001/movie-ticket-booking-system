@@ -40,8 +40,6 @@ public class Coupon extends AuditedEntity {
 
     private Integer maxUses;
 
-    // Read-only here: only the redemption SQL changes it, atomically. If JPA wrote it back, an admin edit
-    // racing a customer's redemption would lose that use.
     @Column(insertable = false, updatable = false)
     private int usedCount;
 
@@ -78,12 +76,6 @@ public class Coupon extends AuditedEntity {
         this.active = false;
     }
 
-    /**
-     * Everything an admin sets on a coupon except its code, which never changes. Validated by the service.
-     *
-     * @param maxDiscountPaise cap on a PERCENT discount; null for none (and always null for FLAT)
-     * @param maxUses          total uses across all customers; null for unlimited
-     */
     public record Terms(DiscountType discountType, long discountValue, Long maxDiscountPaise, long minOrderPaise,
                         Instant validFrom, Instant validTo, Integer maxUses, int perUserLimit,
                         Set<CouponScope> scopes) {

@@ -10,7 +10,7 @@ class ActiveHoldExistsException extends DomainException {
 
     private final UUID bookingId;
 
-    /** @param bookingId the live hold, when we know it; null when a parallel request just created it */
+    // bookingId is null when a parallel request has just created the hold and we don't know its id
     ActiveHoldExistsException(UUID bookingId) {
         super(ErrorCode.ACTIVE_HOLD_EXISTS, "You already have seats on hold for this show");
         this.bookingId = bookingId;

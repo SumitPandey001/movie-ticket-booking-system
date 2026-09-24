@@ -15,6 +15,9 @@ import com.sumit.movieticketbookingsystem.payment.RefundReason;
 import com.sumit.movieticketbookingsystem.payment.RefundRequest;
 import com.sumit.movieticketbookingsystem.pricing.CouponApi;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
+import com.sumit.movieticketbookingsystem.shared.Money;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,11 +29,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Cancelling seats of a confirmed booking. The preview and the real thing go through the same
- * {@link Booking#refundQuote}, so what the customer is shown is what they get, to the paisa.
+ * Cancelling seats of a confirmed booking. The preview and the cancellation both use Booking.refundQuote, so
+ * the amount previewed is the amount refunded.
  */
 @Service
 public class CancellationService {
+
+    private static final Logger log = LoggerFactory.getLogger(CancellationService.class);
 
     private final BookingRepository bookings;
     private final InventoryApi inventory;
@@ -51,11 +56,11 @@ public class CancellationService {
         this.clock = clock;
     }
 
-    /** @param refundId the refund on its way, or null when this cancellation refunds nothing */
+    // refundId is null when this cancellation refunds nothing
     public record CancellationResult(Booking booking, Cancellation cancellation, UUID refundId) {
     }
 
-    /** @param seatIds active seats of the booking; empty for all of them */
+    // no seatIds means every active seat
     @Transactional(readOnly = true)
     public RefundQuote quote(UUID bookingId, UUID userId, Set<Long> seatIds) {
         Booking booking = bookings.findOwn(bookingId, userId);
@@ -64,7 +69,7 @@ public class CancellationService {
         return booking.refundQuote(seatIds, ruleFor(booking, CancellationReason.CUSTOMER), now);
     }
 
-    /** @param seatIds active seats of the booking; empty for all of them */
+    // no seatIds means every active seat
     @Transactional
     public CancellationResult cancel(UUID bookingId, UUID userId, Set<Long> seatIds) {
         Booking booking = bookings.findOwnForUpdate(bookingId, userId);
@@ -75,7 +80,7 @@ public class CancellationService {
 
     /**
      * One booking of a cancelled show, in its own transaction: a hold is released, a confirmed booking is
-     * cancelled in full with every paisa back (no policy, no cutoff). Anything else is left alone: a finished
+     * cancelled with a full refund (no policy, no cutoff). Anything else is left alone: a finished
      * booking needs nothing, and a pending payment takes the late-payment refund once it completes, because
      * confirm finds the show cancelled. The row lock orders this against a confirm already under way.
      */
@@ -112,6 +117,10 @@ public class CancellationService {
             coupons.release(booking.getId());       // the coupon use comes back only once nothing is left of it
         }
         events.cancelled(booking, cancellation);
+        log.info("Booking {}: cancelled {} ({}), refund {}", booking.getBookingRef(),
+                booking.getSeats().stream().filter(seat -> cancellation.getId().equals(seat.cancellationId()))
+                        .map(BookingSeat::seatLabel).collect(Collectors.joining(", ")),
+                reason, Money.ofPaise(cancellation.getRefundPaise()).inRupees());
         return new CancellationResult(booking, cancellation, refundId);
     }
 

@@ -10,7 +10,6 @@ import java.util.Optional;
 
 public interface TheaterRepository extends JpaRepository<Theater, Long> {
 
-    // The theater is always loaded with its screens, since screen changes go through it.
     @Override
     @EntityGraph(attributePaths = "screens")
     Optional<Theater> findById(Long id);

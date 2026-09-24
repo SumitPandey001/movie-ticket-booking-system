@@ -45,7 +45,6 @@ public class CouponAdminService {
         return coupons.save(new Coupon(normalized, terms));
     }
 
-    /** @param code null, or the coupon's current code; codes never change */
     @Transactional
     public Coupon update(long id, String code, Terms terms) {
         Coupon coupon = find(id);

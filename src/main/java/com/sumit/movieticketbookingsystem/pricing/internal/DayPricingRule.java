@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * An admin-defined day-of-week surcharge (a row of pricing_rule). {@link DayRuleRepository} picks the one that
+ * An admin-defined day-of-week surcharge (a row of pricing_rule). DayRuleRepository picks the one that
  * applies to a show; this class is for managing them.
  */
 @Entity

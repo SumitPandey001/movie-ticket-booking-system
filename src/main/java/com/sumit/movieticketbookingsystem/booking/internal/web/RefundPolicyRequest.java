@@ -11,9 +11,9 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * {@code slabs} only for SLAB, e.g. {@code [{"minHoursBefore": 24, "percent": 100}, {"minHoursBefore": 0,
- * "percent": 0}]}; cancelling with less time left than the smallest slab refunds nothing.
- * {@code refundFees} (SLAB only) also gives back the convenience fee.
+ * slabs only for SLAB, e.g. [{"minHoursBefore": 24, "percent": 100}, {"minHoursBefore": 0,
+ * "percent": 0}]; cancelling with less time left than the smallest slab refunds nothing.
+ * refundFees (SLAB only) also gives back the convenience fee.
  */
 record RefundPolicyRequest(
         @NotBlank @Size(max = 80) String name,

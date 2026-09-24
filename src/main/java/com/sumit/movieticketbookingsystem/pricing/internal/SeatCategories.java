@@ -8,9 +8,6 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Translates between the category codes admins use and the ids stored in the price tables.
- */
 @Component
 class SeatCategories {
 
@@ -20,7 +17,6 @@ class SeatCategories {
         this.catalog = catalog;
     }
 
-    /** Same prices keyed by category id; an unknown code is a validation error. */
     Map<Long, Long> byId(Map<String, Long> pricesByCode) {
         Map<String, Long> idsByCode = new LinkedHashMap<>();
         catalog.seatCategories().forEach(category -> idsByCode.put(category.code(), category.categoryId()));

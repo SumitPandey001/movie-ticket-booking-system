@@ -27,7 +27,6 @@ class PriceRepository {
                 .update();
     }
 
-    /** Price in paise by category id. */
     Map<Long, Long> theaterPrices(long theaterId) {
         Map<Long, Long> prices = new LinkedHashMap<>();
         jdbc.sql("""
@@ -40,7 +39,6 @@ class PriceRepository {
         return prices;
     }
 
-    /** Price in paise by category id. */
     Map<Long, Long> showPrices(long showId) {
         Map<Long, Long> prices = new LinkedHashMap<>();
         jdbc.sql("SELECT category_id, price_paise FROM show_category_price WHERE show_id = ? ORDER BY category_id")
@@ -60,7 +58,6 @@ class PriceRepository {
                 .update();
     }
 
-    /** @return false when the show has no seats of that category */
     boolean overrideShowPrice(long showId, long categoryId, long pricePaise) {
         return jdbc.sql("""
                         UPDATE show_category_price SET price_paise = ?, overridden = TRUE

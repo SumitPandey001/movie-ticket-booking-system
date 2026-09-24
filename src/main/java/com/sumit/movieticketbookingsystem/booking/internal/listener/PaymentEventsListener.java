@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Propagation;
 
 /**
  * Payments that finish later land here and take the same path as an immediate answer. No surrounding transaction:
- * confirming and refunding are separate transactions in {@link CheckoutService}, and a failed confirm must not drag
+ * confirming and refunding are separate transactions in CheckoutService, and a failed confirm must not drag
  * the refund down with it.
  */
 @Component

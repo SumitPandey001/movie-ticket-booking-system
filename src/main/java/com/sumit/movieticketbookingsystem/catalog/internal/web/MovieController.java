@@ -16,7 +16,6 @@ class MovieController {
         this.movieService = movieService;
     }
 
-    // Deactivated movies are still returned: past bookings link to them.
     @GetMapping("/{id}")
     MovieResponse movie(@PathVariable long id) {
         return MovieResponse.from(movieService.movie(id));

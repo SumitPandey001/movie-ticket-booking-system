@@ -20,7 +20,6 @@ public class TheaterPriceService {
         this.categories = categories;
     }
 
-    /** Sets the listed categories' defaults; categories not listed keep their current price. */
     @Transactional
     public Map<String, Long> setPrices(long theaterId, Map<String, Long> pricesByCode) {
         try {
@@ -35,7 +34,6 @@ public class TheaterPriceService {
         return prices(theaterId);
     }
 
-    /** Price in paise by category code. */
     @Transactional(readOnly = true)
     public Map<String, Long> prices(long theaterId) {
         Map<String, Long> byCode = new LinkedHashMap<>();

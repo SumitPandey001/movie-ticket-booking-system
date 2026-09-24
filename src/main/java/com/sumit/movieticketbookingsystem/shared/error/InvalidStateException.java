@@ -2,7 +2,7 @@ package com.sumit.movieticketbookingsystem.shared.error;
 
 /**
  * The operation isn't allowed in the entity's current state, e.g. editing a layout that's already active.
- * For a rejected status change use {@link IllegalTransitionException}.
+ * For a rejected status change use IllegalTransitionException.
  */
 public class InvalidStateException extends DomainException {
 

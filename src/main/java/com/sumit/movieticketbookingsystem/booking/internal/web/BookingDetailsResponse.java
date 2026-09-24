@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** The same fields as {@link BookingResponse}, plus the show, cancellations and payment. */
+/** The same fields as BookingResponse, plus the show, cancellations and payment. */
 record BookingDetailsResponse(@JsonUnwrapped BookingResponse booking, String movieTitle, String theaterName,
                               List<CancellationView> cancellations, PaymentView payment) {
 
@@ -38,7 +38,7 @@ record BookingDetailsResponse(@JsonUnwrapped BookingResponse booking, String mov
                             long refundPaise, Instant cancelledAt) {
     }
 
-    /** @param refunds each with its cancellationId (null for a late-payment refund) and where it stands */
+    // each refund has its cancellationId (null for a late-payment refund) and where it stands
     record PaymentView(UUID paymentId, PaymentMethod method, String paidWith, long amountPaise,
                        List<PaymentSummary.Refund> refunds) {
 

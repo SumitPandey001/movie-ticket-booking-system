@@ -20,6 +20,8 @@ import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import com.sumit.movieticketbookingsystem.shared.persistence.ConstraintViolations;
 import com.sumit.movieticketbookingsystem.show.ShowApi;
 import com.sumit.movieticketbookingsystem.show.ShowDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class HoldService {
+
+    private static final Logger log = LoggerFactory.getLogger(HoldService.class);
 
     private static final Set<BookingStatus> LIVE = EnumSet.of(BookingStatus.HELD, BookingStatus.PAYMENT_PENDING);
 
@@ -65,7 +69,7 @@ public class HoldService {
         this.clock = clock;
     }
 
-    /** @param couponCode optional */
+    // couponCode is optional
     public record CreateHold(UUID userId, long showId, Set<Long> seatIds, String couponCode) {
     }
 
@@ -90,12 +94,15 @@ public class HoldService {
         PriceQuote quote = quote(show, command.userId(), seats, command.couponCode());
         reserveCoupon(quote, command.userId(), bookingId);
 
-        // ponytail: a booking_ref clash (1 in ~10^9 per hold) fails this hold with a 500; retry with a fresh
-        // ref here if that ever shows up in the logs
+        // A booking_ref clash (about 1 in 10^9 per hold) fails the hold with a 500. If that ever shows up in
+        // the logs, retry here with a fresh ref.
         Booking booking = Booking.hold(bookingId, refs.next(), command.userId(), show.showId(), show.startTime(),
                 now.plus(properties.holdDuration()), bookingSeats(seats, quote), totals(quote), quote.coupon(), now);
         try {
-            return bookings.saveAndFlush(booking);
+            Booking saved = bookings.saveAndFlush(booking);
+            log.debug("Booking {} holds {} of show {}", saved.getBookingRef(),
+                    seats.stream().map(SeatToBook::label).toList(), show.showId());
+            return saved;
         } catch (DataIntegrityViolationException e) {
             if (ConstraintViolations.isViolationOf(e, "booking_one_active_hold")) {
                 throw new ActiveHoldExistsException(null);   // a parallel request from the same customer won
@@ -105,7 +112,7 @@ public class HoldService {
     }
 
     /**
-     * Swaps the coupon on a live hold, or removes it when {@code couponCode} is null. The seats and the hold's
+     * Swaps the coupon on a live hold, or removes it when couponCode is null. The seats and the hold's
      * expiry stay as they are; only the price changes.
      */
     @Transactional

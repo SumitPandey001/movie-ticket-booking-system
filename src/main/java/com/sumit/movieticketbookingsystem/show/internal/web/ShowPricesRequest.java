@@ -7,6 +7,6 @@ import jakarta.validation.constraints.Positive;
 
 import java.util.Map;
 
-/** Price in paise by category code, e.g. {@code {"prices": {"PREMIUM": 32000}}}. */
+/** Price in paise by category code, e.g. {"prices": {"PREMIUM": 32000}}. */
 record ShowPricesRequest(@NotEmpty Map<@NotBlank String, @NotNull @Positive Long> prices) {
 }

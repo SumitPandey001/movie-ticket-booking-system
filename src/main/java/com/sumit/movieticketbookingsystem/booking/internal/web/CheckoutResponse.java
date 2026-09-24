@@ -6,7 +6,7 @@ import com.sumit.movieticketbookingsystem.payment.PaymentResult;
 import java.util.UUID;
 
 /**
- * A declined payment is a normal answer here ({@code paymentStatus: FAILED}), not an error.
+ * A declined payment is a normal answer here (paymentStatus: FAILED), not an error.
  */
 record CheckoutResponse(UUID paymentId, PaymentResult.Status paymentStatus, String failureReason,
                         BookingResponse booking) {

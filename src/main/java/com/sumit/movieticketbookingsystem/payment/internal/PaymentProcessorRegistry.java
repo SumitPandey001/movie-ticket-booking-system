@@ -10,8 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The processor for each payment method, so nothing has to switch on the method. Refuses to start if a method
- * has no processor or two.
+ * The processor for each payment method. Startup fails if a method has no processor or two.
  */
 @Component
 class PaymentProcessorRegistry {

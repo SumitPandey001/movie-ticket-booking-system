@@ -19,11 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Seats-left per show, kept in Redis so the browse page doesn't count seat rows on every request.
- * Missing keys are rebuilt from Postgres; changes are applied as +/- deltas after commit. The number is for
- * display only: a hold that runs out isn't added back until the sweeper releases it, and the TTL bounds any drift.
- */
 @Service
 class SeatCounter implements SeatAvailabilityReader {
 

@@ -8,9 +8,8 @@ import java.util.UUID;
 public interface CouponApi {
 
     /**
-     * Takes one use of the coupon for the booking, within the coupon's total and per-customer limits.
-     *
-     * @throws CouponInvalidException if either limit has been reached (or the coupon was just deactivated)
+     * Takes one use of the coupon for the booking, within its total and per-customer limits. Throws
+     * CouponInvalidException if either limit has been reached, or the coupon was deactivated in the meantime.
      */
     void reserve(String code, UUID userId, UUID bookingId, long discountPaise);
 

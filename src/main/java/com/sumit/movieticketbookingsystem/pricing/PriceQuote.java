@@ -3,8 +3,8 @@ package com.sumit.movieticketbookingsystem.pricing;
 import java.util.List;
 
 /**
- * What the customer will pay, seat by seat. {@code subtotalPaise} is tier prices plus day adjustments;
- * {@code taxPaise} is GST on tickets and fees together. {@code dayRule} and {@code coupon} name the surcharge and
+ * What the customer will pay, seat by seat. subtotalPaise is tier prices plus day adjustments;
+ * taxPaise is GST on tickets and fees together. dayRule and coupon name the surcharge and
  * the coupon applied, if any.
  */
 public record PriceQuote(List<SeatPriceLine> lines, long subtotalPaise, long discountPaise, long feePaise,

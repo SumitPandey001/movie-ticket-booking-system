@@ -34,7 +34,7 @@ class BrowseController {
         return browseService.dates(movieId, cityId);
     }
 
-    /** {@code slot} takes several values, e.g. {@code slot=EVENING,NIGHT}. */
+    /** slot takes several values, e.g. slot=EVENING,NIGHT. */
     @GetMapping("/movies/{movieId}/shows")
     Showtimes showtimes(@PathVariable long movieId, @RequestParam long cityId, @RequestParam LocalDate date,
             @RequestParam(defaultValue = "") Set<TimeSlot> slot,

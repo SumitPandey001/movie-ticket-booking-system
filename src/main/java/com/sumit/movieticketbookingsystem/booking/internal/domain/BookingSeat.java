@@ -7,11 +7,8 @@ import jakarta.persistence.Enumerated;
 import java.util.UUID;
 
 /**
- * One seat of a booking with the price it was held at. Amounts are in paise.
- *
- * @param feePaise       convenience fee plus the GST on it
- * @param amountPaise    everything this seat costs: base − discount + fee + ticket GST
- * @param cancellationId the cancellation that covered this seat, or null while it's active
+ * One seat of a booking with the price it was held at, in paise. The fee includes its GST, and the amount is
+ * everything the seat costs: base − discount + fee + ticket GST. cancellationId stays null while it's active.
  */
 @Embeddable
 public record BookingSeat(long layoutSeatId, String seatLabel, long categoryId, long basePaise,

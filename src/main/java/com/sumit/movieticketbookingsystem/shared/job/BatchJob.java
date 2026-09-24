@@ -23,7 +23,7 @@ public abstract class BatchJob<T> {
         this.tx = tx;
     }
 
-    /** @return how many items were handled */
+    // returns how many items were handled; skipped and failed ones don't count
     public int runOnce() {
         int processed = 0;
         for (T item : fetchBatch()) {

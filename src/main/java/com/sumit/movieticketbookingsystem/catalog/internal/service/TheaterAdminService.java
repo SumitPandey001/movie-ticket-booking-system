@@ -29,7 +29,6 @@ public class TheaterAdminService {
         return find(id);
     }
 
-    /** Every theater in the city, inactive ones included, with its screens. */
     @Transactional(readOnly = true)
     public List<Theater> theaters(long cityId) {
         return theaters.findByCityIdOrderByName(cityId);
@@ -67,7 +66,7 @@ public class TheaterAdminService {
     @Transactional
     public Screen addScreen(long theaterId, String name) {
         Screen screen = find(theaterId).addScreen(name.strip());
-        theaters.flush();   // so the new screen has its generated id for the response
+        theaters.flush();
         return screen;
     }
 

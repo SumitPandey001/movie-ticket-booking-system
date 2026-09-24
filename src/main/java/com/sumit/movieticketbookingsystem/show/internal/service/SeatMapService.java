@@ -67,11 +67,11 @@ public class SeatMapService {
                           List<Seat> seats) {
     }
 
-    /** {@code pricePaise} includes the day's surcharge; fees and GST are added when seats are held. */
+    /** pricePaise includes the day's surcharge; fees and GST are added when seats are held. */
     public record Category(long id, String code, String name, long pricePaise) {
     }
 
-    /** {@code type} is NORMAL, WHEELCHAIR or BLOCKED; whether it can be picked is {@code status}. */
+    /** type is NORMAL, WHEELCHAIR or BLOCKED; whether it can be picked is status. */
     public record Seat(long seatId, String label, int row, int col, long categoryId, String type, SeatStatus status) {
     }
 }

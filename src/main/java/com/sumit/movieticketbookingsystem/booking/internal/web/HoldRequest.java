@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.util.Set;
 
 /**
- * {@code couponCode} is optional.
+ * couponCode is optional.
  */
 record HoldRequest(@NotNull Long showId, @NotEmpty Set<@NotNull Long> seatIds, @Size(max = 30) String couponCode) {
 }

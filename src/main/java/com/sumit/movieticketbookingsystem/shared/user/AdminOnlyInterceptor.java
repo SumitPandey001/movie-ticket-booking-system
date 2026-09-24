@@ -5,8 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
- * Second line of defence for admin paths. The gateway already blocks non-admins,
- * but the service shouldn't rely on that alone.
+ * Rejects non-admins on admin paths. The gateway blocks them too; this keeps the service from depending on it.
  */
 class AdminOnlyInterceptor implements HandlerInterceptor {
 

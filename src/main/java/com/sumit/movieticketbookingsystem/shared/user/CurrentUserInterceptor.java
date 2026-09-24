@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Builds the {@link CurrentUser} from the headers the gateway sets and stores it on the request.
+ * Builds the CurrentUser from the headers the gateway sets and stores it on the request.
  * The gateway has already authenticated the caller, so the headers are trusted as-is.
  */
 class CurrentUserInterceptor implements HandlerInterceptor {

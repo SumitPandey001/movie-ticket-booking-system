@@ -2,7 +2,7 @@ package com.sumit.movieticketbookingsystem.notification.internal;
 
 import com.sumit.movieticketbookingsystem.shared.user.Recipient;
 
-/** A way of reaching a customer. A new channel is one more implementation; nothing else changes. */
+/** A way of reaching a customer, such as email or SMS. */
 interface NotificationChannel {
 
     Channel channel();

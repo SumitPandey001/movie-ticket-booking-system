@@ -19,7 +19,7 @@ enum NotificationType {
         return subject.formatted(bookingRef);
     }
 
-    /** Templates live at {@code templates/<channel>/<type>}, e.g. {@code email/booking-confirmed.html}. */
+    /** Templates live at templates/<channel>/<type>, e.g. email/booking-confirmed.html. */
     String templateName() {
         return name().toLowerCase(Locale.ROOT).replace('_', '-');
     }

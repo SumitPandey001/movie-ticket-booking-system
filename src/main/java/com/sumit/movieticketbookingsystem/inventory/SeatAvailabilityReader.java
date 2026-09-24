@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Seats-left numbers for listing pages. For display only: booking decisions always go through {@link InventoryApi}.
+ * Seats-left numbers for listing pages. For display only: booking decisions always go through InventoryApi.
  */
 public interface SeatAvailabilityReader {
 

@@ -66,11 +66,7 @@ public class BrowseService {
         return search.dates(cityId, movieId, strip.first(), strip.last(), bookableAfter());
     }
 
-    /**
-     * @param slots    empty means any time of day; several are OR-ed
-     * @param language null means any
-     * @param format   null means any
-     */
+    // no slots means any time of day, and several are OR-ed; a null language or format means any
     public Showtimes showtimes(long movieId, long cityId, LocalDate date, Set<TimeSlot> slots, String language,
             String format) {
         CitySummary city = activeCity(cityId);

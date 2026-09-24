@@ -11,7 +11,7 @@ import java.util.List;
 public record RefundPolicySnapshot(long policyId, String name, RefundPolicyType type, boolean refundFees,
                                    List<RefundSlab> slabs) {
 
-    /** The one place that maps a kind of policy to its rule; the compiler flags a type without a case. */
+    /** Maps the policy type to its rule. The switch has no default, so a new type won't compile until it's here. */
     public RefundRule refundRule() {
         return switch (type) {
             case SLAB -> new SlabRefundRule(slabs, refundFees);

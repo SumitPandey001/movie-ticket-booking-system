@@ -23,7 +23,7 @@ class TemplateRenderer {
 
     /**
      * Boot's resolver handles the HTML emails; SMS templates are plain text, so they get their own resolver.
-     * It only answers for {@code sms/*} names and goes first, so the two never compete.
+     * It only answers for sms/* names and goes first, so the two never compete.
      */
     @Bean
     static ITemplateResolver smsTemplateResolver() {

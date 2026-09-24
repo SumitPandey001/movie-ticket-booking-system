@@ -22,8 +22,7 @@ class EventPublicationJobs {
 
     // old enough that it isn't still being delivered for the first time; every listener copes with a repeat
     private static final Duration RETRY_AFTER = Duration.ofMinutes(1);
-    // ponytail: a delivery that keeps failing is left alone after this many tries and needs a look (it stays in
-    // event_publication); alert on those rows if that ever matters
+    // After this many tries a delivery is left alone. It stays in event_publication, so someone can look at it.
     private static final int MAX_ATTEMPTS = 10;
     private static final Duration KEEP_COMPLETED = Duration.ofDays(7);
 

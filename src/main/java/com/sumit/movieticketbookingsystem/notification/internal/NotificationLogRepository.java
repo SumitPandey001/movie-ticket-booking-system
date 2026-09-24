@@ -25,11 +25,11 @@ class NotificationLogRepository {
     }
 
     /**
-     * @return the row to send against, or empty if this message was already sent. A row left PENDING or FAILED
+     * Returns the row to send against, or empty if this message was already sent. A row left PENDING or FAILED
      * by an earlier attempt is taken over for the retry.
      */
-    // ponytail: two deliveries of the same event at the very same moment could both claim and send twice; the
-    // outbox redelivers minutes apart, so a claimed_at lease is only worth adding if that ever happens
+    // Two deliveries of the same event at the same moment could both claim the row and send twice. The outbox
+    // redelivers minutes apart, so a claimed_at lease isn't worth adding unless that actually happens.
     Optional<Long> claim(UUID bookingId, NotificationType type, String referenceId, Channel channel) {
         return jdbc.sql("""
                         INSERT INTO notification_log (booking_id, type, reference_id, channel, status, attempts)

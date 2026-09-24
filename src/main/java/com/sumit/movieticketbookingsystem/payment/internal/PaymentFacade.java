@@ -123,8 +123,8 @@ class PaymentFacade implements PaymentApi {
                                 .toList()));
     }
 
-    // ponytail: the simulated gateway's later answer lives only in memory, so a restart loses it and the booking
-    // stays PAYMENT_PENDING until the sweeper expires it. A real gateway would call back through a webhook.
+    // The simulated gateway's later answer only lives in memory, so a restart loses it and the booking stays
+    // PAYMENT_PENDING until the sweeper expires it. A real gateway would call back through a webhook instead.
     private void completeLater(UUID paymentId) {
         CompletableFuture.runAsync(() -> tx.executeWithoutResult(status -> {
                     Payment payment = payments.findById(paymentId).orElseThrow();

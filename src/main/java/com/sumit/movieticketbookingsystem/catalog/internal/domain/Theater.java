@@ -84,7 +84,6 @@ public class Theater extends AuditedEntity {
                 .orElseThrow(() -> new NotFoundException("Screen", screenId));
     }
 
-    // inactive screens still count: the name stays reserved in the database
     private void requireUniqueScreenName(String screenName, Screen except) {
         boolean taken = screens.stream()
                 .anyMatch(screen -> screen != except && screen.getName().equalsIgnoreCase(screenName));

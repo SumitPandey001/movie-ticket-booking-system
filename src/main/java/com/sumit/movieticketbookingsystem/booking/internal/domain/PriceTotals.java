@@ -1,7 +1,7 @@
 package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
 /**
- * A booking's totals in paise. {@code tax} covers GST on both tickets and fees.
+ * A booking's totals in paise. tax covers GST on both tickets and fees.
  */
 public record PriceTotals(long subtotal, long discount, long fee, long tax, long total) {
 

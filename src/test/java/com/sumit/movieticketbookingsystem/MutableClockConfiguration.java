@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Import this to replace the application's clock with a {@link MutableClock}.
+ * Import this to replace the application's clock with a MutableClock.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class MutableClockConfiguration {

@@ -4,6 +4,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
 
-/** {@code seatIds} optional; leave it out to cancel every seat that's still active. */
+/** seatIds optional; leave it out to cancel every seat that's still active. */
 record CancelRequest(Set<@NotNull Long> seatIds) {
 }

@@ -14,11 +14,6 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.Set;
 
-/**
- * e.g. {@code {"name": "Weekend +20%", "scopeType": "GLOBAL", "daysOfWeek": [6, 7],
- * "adjustmentType": "PERCENT", "adjustmentValue": 20}}. Days are ISO: 1 = Monday ... 7 = Sunday.
- * {@code active} defaults to true; set it to false to pause a rule without deleting it.
- */
 record PricingRuleRequest(
         @NotBlank @Size(max = 80) String name,
         @NotNull RuleScope scopeType,

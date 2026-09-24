@@ -44,7 +44,7 @@ class BookingController {
         this.queryService = queryService;
     }
 
-    /** The customer's bookings, one page at a time; {@code page} starts at 0. */
+    /** The customer's bookings, one page at a time; page starts at 0. */
     @GetMapping
     HistoryResponse history(@RequestParam BookingQueryService.View view,
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -88,7 +88,7 @@ class BookingController {
         return BookingResponse.from(holdService.release(id, user.id()));
     }
 
-    /** What cancelling now would refund. Without {@code seatIds}, every active seat. */
+    /** What cancelling now would refund. Without seatIds, every active seat. */
     @GetMapping("/{id}/refund-quote")
     RefundQuoteResponse refundQuote(@PathVariable UUID id, @RequestParam(required = false) Set<Long> seatIds,
             CurrentUser user) {

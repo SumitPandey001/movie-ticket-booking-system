@@ -7,7 +7,7 @@ import com.sumit.movieticketbookingsystem.booking.internal.domain.RefundRule;
 import java.time.Duration;
 import java.util.List;
 
-/** Every paisa back, fees included, whenever it's cancelled. Also what a cancelled show gets. */
+/** Everything back, fees included, whenever it's cancelled. Also used when the admin cancels the show. */
 public enum FullRefundRule implements RefundRule {
     INSTANCE;
 

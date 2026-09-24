@@ -1,12 +1,8 @@
 package com.sumit.movieticketbookingsystem.pricing;
 
 /**
- * One seat's price, in paise.
- *
- * @param dayAdjustmentPaise day-of-week surcharge on top of the tier price
- * @param feePaise           convenience fee, before GST
- * @param ticketTaxPaise     GST on the ticket (tier + adjustment − discount)
- * @param feeTaxPaise        GST on the convenience fee
+ * One seat's price, in paise. The day adjustment is the day-of-week surcharge on top of the tier price, the
+ * fee is before GST, the ticket tax is GST on tier + adjustment − discount, and the fee tax is GST on the fee.
  */
 public record SeatPriceLine(long layoutSeatId, long categoryId, long tierPaise, long dayAdjustmentPaise,
                             long discountPaise, long feePaise, long ticketTaxPaise, long feeTaxPaise) {

@@ -24,26 +24,23 @@ public interface InventoryApi {
 
     /**
      * Claims every requested seat for the booking, or none of them. Seats are free when they're available or
-     * their hold ran out before {@code now}. Rows are locked in seat order and never waited on, so two holds
-     * can't deadlock and a customer racing for the same seat gets an answer straight away.
-     *
-     * @throws SeatsUnavailableException if any seat is taken, locked by another hold, or not part of the show
+     * their hold ran out before now. Rows are locked in seat order and never waited on, so two holds can't
+     * deadlock and a customer racing for the same seat gets an answer straight away. Throws
+     * SeatsUnavailableException if any seat is taken, locked by another hold, or not part of the show.
      */
     List<HeldSeat> hold(long showId, Set<Long> seatIds, UUID bookingId, Instant expiresAt, Instant now);
 
     /**
      * Books the seats for good once they're paid for. Each seat must still be held by this booking, or be free
      * again (its hold ran out and nobody took it). Waits for row locks rather than failing: a customer who has
-     * paid shouldn't lose out to a brief lock.
-     *
-     * @throws SeatsUnavailableException if another booking has any of the seats now; nothing is booked then
+     * paid shouldn't lose out to a brief lock. Throws SeatsUnavailableException if another booking has any of the
+     * seats now, and then nothing is booked.
      */
     void confirm(long showId, Set<Long> seatIds, UUID bookingId, Instant now);
 
     /**
-     * Frees seats the booking has paid for, when they're cancelled. All or nothing.
-     *
-     * @throws IllegalStateException if any of the seats isn't booked by this booking
+     * Frees seats the booking has paid for when they're cancelled, all or nothing. Throws IllegalStateException
+     * if any of them isn't booked by this booking.
      */
     void releaseBooked(long showId, Set<Long> seatIds, UUID bookingId);
 
@@ -52,7 +49,7 @@ public interface InventoryApi {
 
     /**
      * Current status of every seat of the show, by layout seat id. Always read from the database;
-     * a hold that ran out before {@code now} reads as AVAILABLE.
+     * a hold that ran out before now reads as AVAILABLE.
      */
     Map<Long, SeatStatus> seatStatuses(long showId, Instant now);
 }

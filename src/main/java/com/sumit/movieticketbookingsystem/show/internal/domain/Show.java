@@ -60,7 +60,7 @@ public class Show extends AuditedEntity {
     protected Show() {
     }
 
-    /** @param refundPolicyId null to use whatever the default policy is when a booking is confirmed */
+    // refundPolicyId may be null; the default policy then applies when a booking is confirmed
     public Show(Placement placement, long movieId, Timing timing, String language, String format, int totalSeats,
             Long refundPolicyId) {
         this.movieId = movieId;
@@ -96,7 +96,7 @@ public class Show extends AuditedEntity {
     public record Placement(long screenId, long theaterId, long cityId, long layoutId) {
     }
 
-    /** {@code blockedUntil} is the end plus the cleaning buffer: the screen is taken until then. */
+    /** blockedUntil is the end plus the cleaning buffer: the screen is taken until then. */
     public record Timing(LocalDate showDate, Instant start, Instant end, Instant blockedUntil) {
     }
 

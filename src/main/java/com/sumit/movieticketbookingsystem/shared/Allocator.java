@@ -10,7 +10,7 @@ public final class Allocator {
     }
 
     /**
-     * Splits {@code total} in proportion to {@code weights} so that the parts always add up to the total.
+     * Splits total in proportion to weights so that the parts always add up to the total.
      * Each part gets its floor share first; the leftover paise go one each to the parts with the largest
      * remainders (earlier index wins a tie).
      */

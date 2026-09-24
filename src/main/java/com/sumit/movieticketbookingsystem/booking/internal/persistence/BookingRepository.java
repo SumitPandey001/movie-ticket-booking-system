@@ -33,7 +33,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     }
 
     /**
-     * Like {@link #findOwn}, but locks the row until the transaction ends, so two changes to the same booking
+     * Like findOwn, but locks the row until the transaction ends, so two changes to the same booking
      * (a double-clicked cancel, a customer cancelling while the show is being cancelled) run one after the other.
      */
     default Booking findOwnForUpdate(UUID bookingId, UUID userId) {

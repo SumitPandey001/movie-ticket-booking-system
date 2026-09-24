@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The cancellation terms an admin sets up. Bookings copy them at confirmation ({@link RefundPolicySnapshot}),
+ * The cancellation terms an admin sets up. Bookings copy them at confirmation (RefundPolicySnapshot),
  * so editing a policy only affects bookings confirmed afterwards.
  */
 @Entity
@@ -66,7 +66,7 @@ public class RefundPolicy extends AuditedEntity {
         return new RefundPolicySnapshot(id, name, type, refundFees, List.copyOf(slabs));
     }
 
-    /** @param slabs only for {@link RefundPolicyType#SLAB}; empty otherwise */
+    // slabs are only used by SLAB policies and stay empty otherwise
     public record Terms(String name, RefundPolicyType type, boolean refundFees, List<RefundSlab> slabs) {
     }
 

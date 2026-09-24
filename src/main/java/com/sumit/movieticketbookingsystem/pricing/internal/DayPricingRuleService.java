@@ -42,7 +42,6 @@ public class DayPricingRuleService {
         return rule;
     }
 
-    // Prices are frozen on bookings, so nothing refers to a rule once it's gone.
     @Transactional
     public void delete(long id) {
         rules.delete(find(id));

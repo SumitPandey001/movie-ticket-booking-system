@@ -47,7 +47,7 @@ class HoldExpiryJob extends BatchJob<UUID> {
         this.clock = clock;
     }
 
-    // ponytail: at most BATCH_SIZE a round, so a flood of lapsed holds drains over a few rounds
+    // at most BATCH_SIZE bookings a round; a large backlog drains over a few rounds
     @Scheduled(fixedDelay = 30, timeUnit = TimeUnit.SECONDS)
     @SchedulerLock(name = "holdExpiry")
     void run() {

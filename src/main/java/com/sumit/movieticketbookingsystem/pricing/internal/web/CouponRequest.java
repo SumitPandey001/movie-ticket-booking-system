@@ -12,10 +12,6 @@ import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 import java.util.Set;
 
-/**
- * Amounts in paise. {@code code} is required when creating and can't change afterwards (leave it out when
- * updating). {@code maxUses} empty = unlimited; {@code scopes} empty = valid everywhere.
- */
 record CouponRequest(
         @Size(max = 30) String code,
         @NotNull DiscountType discountType,
