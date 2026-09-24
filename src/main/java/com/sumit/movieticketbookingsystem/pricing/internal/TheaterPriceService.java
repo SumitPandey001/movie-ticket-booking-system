@@ -10,7 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
-class TheaterPriceService {
+public class TheaterPriceService {
 
     private final PriceRepository prices;
     private final SeatCategories categories;

@@ -1,16 +1,7 @@
 package com.sumit.movieticketbookingsystem.booking.internal.web;
 
-import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicy;
-import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicy.Terms;
 import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicyService;
-import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundPolicyType;
-import com.sumit.movieticketbookingsystem.booking.internal.refund.RefundSlab;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,35 +48,5 @@ class RefundPolicyAdminController {
     @PostMapping("/{id}/make-default")
     RefundPolicyResponse makeDefault(@PathVariable long id) {
         return RefundPolicyResponse.from(policyService.makeDefault(id));
-    }
-
-    /**
-     * {@code slabs} only for SLAB, e.g. {@code [{"minHoursBefore": 24, "percent": 100}, {"minHoursBefore": 0,
-     * "percent": 0}]}; cancelling with less time left than the smallest slab refunds nothing.
-     * {@code refundFees} (SLAB only) also gives back the convenience fee.
-     */
-    record RefundPolicyRequest(
-            @NotBlank @Size(max = 80) String name,
-            @NotNull RefundPolicyType type,
-            Boolean refundFees,
-            List<@Valid @NotNull SlabRequest> slabs) {
-
-        Terms toTerms() {
-            List<RefundSlab> terms = slabs == null ? List.of()
-                    : slabs.stream().map(slab -> new RefundSlab(slab.minHoursBefore(), slab.percent())).toList();
-            return new Terms(name, type, Boolean.TRUE.equals(refundFees), terms);
-        }
-    }
-
-    record SlabRequest(@NotNull @Min(0) Integer minHoursBefore, @NotNull @Min(0) @Max(100) Integer percent) {
-    }
-
-    record RefundPolicyResponse(long id, String name, RefundPolicyType type, boolean refundFees,
-                                boolean isDefault, List<RefundSlab> slabs) {
-
-        static RefundPolicyResponse from(RefundPolicy policy) {
-            return new RefundPolicyResponse(policy.getId(), policy.getName(), policy.getType(),
-                    policy.isRefundFees(), policy.isDefaultPolicy(), List.copyOf(policy.getSlabs()));
-        }
     }
 }

@@ -25,7 +25,6 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
-
 logging:
   level:
     # Hibernate warns on every constraint violation, including the ones we turn into 409s on purpose
@@ -33,10 +32,12 @@ logging:
     org.hibernate.orm.jdbc.error: error
     # Lettuce looks for a macOS-native DNS resolver it doesn't need; we only ever resolve the Redis host
     io.netty.resolver.dns.DnsServerAddressStreamProviders: error
-
+web:
+  cors:
+    # the local UI prototypes (prototype/, served on 5500); leave empty where a gateway serves one origin
+    allowed-origins: http://localhost:5500,http://127.0.0.1:5500
 jobs:
   enabled: true                                 # scheduled jobs; tests switch them off and run them by hand
-
 booking:
   cleaning-buffer: PT20M
   late-night-cutoff: "03:00"
@@ -64,5 +65,11 @@ booking:
     simulated-delay: PT15S                      # how long a DELAYED simulated payment takes to succeed
     net-banking-banks: [HDFC, ICICI, SBI, AXIS, KOTAK]
     wallets: [PAYTM, PHONEPE, AMAZONPAY]
-
-
+#spring:
+#  config:
+#    activate:
+#      on-profile: local
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/moviebooking
+#    username: postgres
+#    password: alex@123

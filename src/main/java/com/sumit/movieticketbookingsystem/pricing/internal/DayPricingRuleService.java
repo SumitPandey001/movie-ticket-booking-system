@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-class DayPricingRuleService {
+public class DayPricingRuleService {
 
     private static final int MAX_PERCENT = 100;
 

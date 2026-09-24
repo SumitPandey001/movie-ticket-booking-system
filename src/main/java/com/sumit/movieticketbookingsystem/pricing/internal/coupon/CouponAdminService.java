@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
-class CouponAdminService {
+public class CouponAdminService {
 
     private static final Pattern CODE = Pattern.compile("[A-Z0-9]{3,30}");
 
