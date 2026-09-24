@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 // Titles aren't unique on purpose: remakes and re-releases share them.
 @Service
@@ -22,6 +23,12 @@ public class MovieService {
     @Transactional(readOnly = true)
     public Movie movie(long id) {
         return find(id);
+    }
+
+    /** Every movie, inactive ones included. */
+    @Transactional(readOnly = true)
+    public List<Movie> movies() {
+        return movies.findAllByOrderByTitle();
     }
 
     @Transactional

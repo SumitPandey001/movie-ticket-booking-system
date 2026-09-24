@@ -11,6 +11,8 @@ import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class TheaterAdminService {
 
@@ -25,6 +27,12 @@ public class TheaterAdminService {
     @Transactional(readOnly = true)
     public Theater theater(long id) {
         return find(id);
+    }
+
+    /** Every theater in the city, inactive ones included, with its screens. */
+    @Transactional(readOnly = true)
+    public List<Theater> theaters(long cityId) {
+        return theaters.findByCityIdOrderByName(cityId);
     }
 
     @Transactional

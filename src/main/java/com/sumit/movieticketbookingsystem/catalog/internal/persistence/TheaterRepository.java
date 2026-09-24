@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface TheaterRepository extends JpaRepository<Theater, Long> {
@@ -17,6 +18,9 @@ public interface TheaterRepository extends JpaRepository<Theater, Long> {
     @Query("select t from Theater t join fetch t.screens where t.id = "
             + "(select s.theater.id from Screen s where s.id = :screenId)")
     Optional<Theater> findByScreenId(long screenId);
+
+    @EntityGraph(attributePaths = "screens")
+    List<Theater> findByCityIdOrderByName(long cityId);
 
     boolean existsByCityIdAndNameIgnoreCase(Long cityId, String name);
 
