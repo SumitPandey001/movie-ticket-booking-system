@@ -9,9 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
-/**
- * Part of the {@link Theater} aggregate; only changed through the theater.
- */
 @Entity
 public class Screen extends AuditedEntity {
 

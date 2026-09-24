@@ -18,7 +18,7 @@ import java.util.Map;
  * Turns booking and payment events into messages. Runs after the publisher committed, so a slow mail server
  * never holds up a booking.
  *
- * <p>No transaction on purpose: each notification_log update commits by itself, so an email that went out stays
+ * No transaction on purpose: each notification_log update commits by itself, so an email that went out stays
  * SENT even if a later channel fails and the event comes round again.
  */
 @Component

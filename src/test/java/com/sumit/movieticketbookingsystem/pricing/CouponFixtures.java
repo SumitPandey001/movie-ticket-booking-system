@@ -19,10 +19,8 @@ public class CouponFixtures {
         this.mvc = mvc;
     }
 
-    /**
-     * @param terms the rest of the coupon's JSON, e.g. {@code "discountType": "FLAT", "discountValue": 5000}
-     * @return the new coupon's code
-     */
+    // terms is the rest of the coupon's JSON, e.g. "discountType": "FLAT", "discountValue": 5000.
+    // Returns the new coupon's code.
     public String coupon(String terms) throws Exception {
         String code = "C" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
         mvc.perform(asAdmin(post("/api/v1/admin/coupons")).content("""

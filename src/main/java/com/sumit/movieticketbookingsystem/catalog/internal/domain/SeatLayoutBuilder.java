@@ -12,19 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Describes a screen's seats row by row, front to back, and left to right within a row:
- * <pre>
- * SeatLayoutBuilder.layout()
- *         .row("A").seats(1, 8, "REGULAR").aisle(2).seats(9, 16, "REGULAR")
- *         .row("J").aisle(2).seats(1, 6, "RECLINER")
- *         .block(SeatRef.parse("A5"))
- *         .wheelchair(SeatRef.parse("J1"))
- *         .build();
- * </pre>
- * Seats are placed on the grid in the order they're added, so two seats can never share a cell.
- * Seat ranges and aisles are checked as they're added; the layout as a whole in {@link #build()}.
- */
 public final class SeatLayoutBuilder {
 
     private final List<RowDraft> rows = new ArrayList<>();

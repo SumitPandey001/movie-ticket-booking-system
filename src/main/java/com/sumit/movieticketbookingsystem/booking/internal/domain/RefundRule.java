@@ -6,15 +6,14 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * How much a cancellation refunds. One implementation per kind of refund policy; a booking's comes from its
- * {@code RefundPolicySnapshot}. Adding a kind of policy means adding a rule, not editing the others.
+ * How much a cancellation refunds. One implementation per kind of refund policy; a booking gets its rule from
+ * its RefundPolicySnapshot.
  */
 public interface RefundRule {
 
-    /** @param beforeShow time left until the show starts */
     RefundQuote quote(List<BookingSeat> seats, Duration beforeShow);
 
-    /** Refunds {@code percent} of the ticket price, plus the fees when {@code refundFees} is set. */
+    /** Refunds percent of the ticket price, plus the fees when refundFees is set. */
     static RefundQuote refund(List<BookingSeat> seats, int percent, boolean refundFees) {
         long ticket = seats.stream().mapToLong(BookingSeat::ticketPaise).sum();
         long fees = seats.stream().mapToLong(BookingSeat::feePaise).sum();

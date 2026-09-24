@@ -6,10 +6,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * The coupon limits, enforced with conditional statements: however many customers race for the last use,
- * the database hands it to exactly one of them.
- */
 @Repository
 class CouponRedemptionRepository {
 
@@ -19,7 +15,6 @@ class CouponRedemptionRepository {
         this.jdbc = jdbc;
     }
 
-    /** @return false if the coupon has no uses left (or isn't active) */
     boolean takeGlobalUse(long couponId) {
         return jdbc.sql("""
                         UPDATE coupon SET used_count = used_count + 1
@@ -29,7 +24,6 @@ class CouponRedemptionRepository {
                 .update() == 1;
     }
 
-    /** @return false if this customer has already used the coupon as often as allowed */
     boolean takeUserUse(long couponId, UUID userId, int perUserLimit) {
         return jdbc.sql("""
                         INSERT INTO coupon_user_usage (coupon_id, user_id, used_count) VALUES (:couponId, :userId, 1)
@@ -58,7 +52,6 @@ class CouponRedemptionRepository {
                 .update();
     }
 
-    /** Releases the booking's live redemption and returns whose use it was, so the counters can be given back. */
     Optional<Use> releaseLive(UUID bookingId) {
         return jdbc.sql("""
                         UPDATE coupon_redemption SET status = 'RELEASED', updated_at = now()

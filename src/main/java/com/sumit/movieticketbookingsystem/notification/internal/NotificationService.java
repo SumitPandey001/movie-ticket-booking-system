@@ -28,10 +28,9 @@ class NotificationService {
 
     /**
      * Sends the message on every channel that can reach the user, once per channel however often it's called.
-     * A failed send is rethrown so the event stays incomplete and is delivered again; channels that already
-     * went out are skipped on that retry.
-     *
-     * @param referenceId tells apart messages of the same type on one booking (the refund id); '' if there's one
+     * A failed send is rethrown so the event stays incomplete and is delivered again; channels that already went
+     * out are skipped on that retry. referenceId tells apart messages of the same type on one booking (the refund
+     * id) and is empty when there's only ever one.
      */
     void notify(NotificationType type, UUID bookingId, String referenceId, UUID userId, Map<String, Object> model) {
         Optional<Recipient> found = users.recipient(userId);

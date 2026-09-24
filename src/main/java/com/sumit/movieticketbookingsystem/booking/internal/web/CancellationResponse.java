@@ -5,7 +5,7 @@ import com.sumit.movieticketbookingsystem.booking.internal.service.CancellationS
 
 import java.util.UUID;
 
-/** @param refundId null when nothing is refunded (a non-refundable ticket, or too close to the show) */
+// refundId is null when nothing is refunded: a non-refundable ticket, or too close to the show
 record CancellationResponse(UUID cancellationId, int refundPercent, long refundPaise, UUID refundId,
                             BookingResponse booking) {
 

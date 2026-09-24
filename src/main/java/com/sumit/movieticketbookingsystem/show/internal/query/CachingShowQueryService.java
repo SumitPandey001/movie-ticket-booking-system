@@ -17,7 +17,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Decorator that keeps each unfiltered browse day in Redis. Everything else goes straight to Postgres.
+ * Keeps each unfiltered browse day in Redis, in front of ShowSearchRepository; everything else goes to Postgres.
  * Redis is only a speed-up: if it's down, reads fall back to the database and nothing fails.
  */
 @Primary

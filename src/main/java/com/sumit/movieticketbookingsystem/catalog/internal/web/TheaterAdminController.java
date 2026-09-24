@@ -28,7 +28,7 @@ class TheaterAdminController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    TheaterResponse create(@Valid @RequestBody TheaterRequests.Create request) {
+    TheaterResponse create(@Valid @RequestBody CreateTheaterRequest request) {
         return TheaterResponse.from(
                 theaterService.create(request.cityId(), request.name(), request.area(), request.address()));
     }
@@ -44,7 +44,7 @@ class TheaterAdminController {
     }
 
     @PutMapping("/{id}")
-    TheaterResponse update(@PathVariable long id, @Valid @RequestBody TheaterRequests.Update request) {
+    TheaterResponse update(@PathVariable long id, @Valid @RequestBody UpdateTheaterRequest request) {
         return TheaterResponse.from(theaterService.update(id, request.name(), request.area(), request.address()));
     }
 
@@ -56,7 +56,7 @@ class TheaterAdminController {
 
     @PostMapping("/{id}/screens")
     @ResponseStatus(HttpStatus.CREATED)
-    ScreenResponse addScreen(@PathVariable long id, @Valid @RequestBody TheaterRequests.ScreenName request) {
+    ScreenResponse addScreen(@PathVariable long id, @Valid @RequestBody ScreenNameRequest request) {
         return ScreenResponse.from(theaterService.addScreen(id, request.name()));
     }
 }

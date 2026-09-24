@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 /**
  * A customer's claim on some seats of one show, from the hold through payment to cancellation.
- * Status only changes through the methods here, which go through {@link BookingStatus}.
+ * Status only changes through the methods here, which go through BookingStatus.
  */
 @Entity
 public class Booking {
@@ -95,7 +95,7 @@ public class Booking {
     protected Booking() {
     }
 
-    /** @param couponCode the coupon the price includes, or null */
+    // couponCode is the coupon the price includes, or null
     public static Booking hold(UUID id, String bookingRef, UUID userId, long showId, Instant showStartTime,
             Instant holdExpiresAt, List<BookingSeat> seats, PriceTotals totals, String couponCode, Instant now) {
         if (seats.isEmpty()) {
@@ -137,7 +137,7 @@ public class Booking {
     }
 
     /**
-     * The customer starts paying. The seats stay reserved for at least {@code paymentWindow} from now, so a
+     * The customer starts paying. The seats stay reserved for at least paymentWindow from now, so a
      * payment started just before the hold runs out still has time to finish; an existing longer hold isn't cut.
      */
     public void startPayment(Instant now, Duration paymentWindow) {
@@ -148,7 +148,7 @@ public class Booking {
         }
     }
 
-    /** @param refundPolicy the terms this booking is sold under; kept even if the policy is edited later */
+    // the policy is copied onto the booking, so editing it later doesn't change this sale
     public void confirm(RefundPolicySnapshot refundPolicy, Instant now) {
         status = status.transitionTo(BookingStatus.CONFIRMED);
         refundPolicySnapshot = refundPolicy;
@@ -171,9 +171,7 @@ public class Booking {
     }
 
     /**
-     * What cancelling the seats now would refund, without cancelling anything.
-     *
-     * @param seatIds active seats of this booking; empty means all of them
+     * What cancelling the seats now would refund, without cancelling anything. No seatIds means every active seat.
      */
     public RefundQuote refundQuote(Set<Long> seatIds, RefundRule rule, Instant now) {
         if (status != BookingStatus.CONFIRMED) {

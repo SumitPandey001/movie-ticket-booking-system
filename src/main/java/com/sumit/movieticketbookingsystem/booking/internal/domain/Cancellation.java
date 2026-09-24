@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Some or all seats of a booking given back, and what that refunds. Created only by {@link Booking#cancel}. */
+/** Some or all seats of a booking given back, and what that refunds. Created only by Booking.cancel. */
 @Entity
 public class Cancellation {
 

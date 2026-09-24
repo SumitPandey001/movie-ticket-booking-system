@@ -4,8 +4,7 @@ import java.time.LocalDate;
 
 /**
  * What pricing needs to know about a show. Callers pass it in so pricing never has to ask the show module.
- *
- * @param showDate the listing date, whose day of the week picks the day rule
+ * showDate is the listing date, whose day of the week picks the day rule.
  */
 public record ShowPricing(long showId, long movieId, long cityId, long theaterId, LocalDate showDate) {
 }

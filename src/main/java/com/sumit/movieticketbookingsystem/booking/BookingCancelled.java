@@ -5,9 +5,7 @@ import java.util.UUID;
 
 /**
  * Some or all seats of a confirmed booking were cancelled. The refund, if any, follows as its own event.
- *
- * @param seatLabels     the seats this cancellation covered
- * @param fullyCancelled no active seats are left on the booking
+ * seatLabels are the seats this cancellation covered; fullyCancelled means no active seats are left.
  */
 public record BookingCancelled(UUID bookingId, String bookingRef, UUID userId, UUID cancellationId,
                                CancellationReason reason, String movieTitle, List<String> seatLabels,

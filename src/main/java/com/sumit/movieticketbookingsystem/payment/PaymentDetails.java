@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
- * What the customer entered to pay, read from JSON by its {@code type}, e.g.
- * {@code {"type": "UPI", "vpa": "asha@okbank"}}. Never stored; only a masked form is kept on the payment.
+ * What the customer entered to pay, read from JSON by its type, e.g.
+ * {"type": "UPI", "vpa": "<upi id>"}. Never stored; only a masked form is kept on the payment.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({

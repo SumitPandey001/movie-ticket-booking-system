@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
-// Titles aren't unique on purpose: remakes and re-releases share them.
 @Service
 public class MovieService {
 
@@ -25,7 +24,6 @@ public class MovieService {
         return find(id);
     }
 
-    /** Every movie, inactive ones included. */
     @Transactional(readOnly = true)
     public List<Movie> movies() {
         return movies.findAllByOrderByTitle();

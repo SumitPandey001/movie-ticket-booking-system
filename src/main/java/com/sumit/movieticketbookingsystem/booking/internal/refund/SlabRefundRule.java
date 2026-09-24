@@ -9,9 +9,8 @@ import java.util.List;
 
 /**
  * The first slab whose hours the customer is still ahead of decides the percentage. Only whole hours count, so
- * 23h59m before the show is 23 hours; with less time left than the smallest slab, nothing is refunded.
- *
- * @param slabs most hours first, as policies store them
+ * 23h59m before the show is 23 hours; with less time left than the smallest slab, nothing is refunded. Slabs
+ * come most hours first, the way policies store them.
  */
 record SlabRefundRule(List<RefundSlab> slabs, boolean refundFees) implements RefundRule {
 

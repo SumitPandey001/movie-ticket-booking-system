@@ -3,17 +3,14 @@ package com.sumit.movieticketbookingsystem.booking.internal.web;
 import com.sumit.movieticketbookingsystem.booking.internal.service.BookingQueryService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.CancellationService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.CheckoutService;
-import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
 import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService.CreateHold;
+import com.sumit.movieticketbookingsystem.booking.internal.service.HoldService;
 import com.sumit.movieticketbookingsystem.payment.PaymentResult;
 import com.sumit.movieticketbookingsystem.shared.idempotency.Idempotent;
 import com.sumit.movieticketbookingsystem.shared.user.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,7 +44,7 @@ class BookingController {
         this.queryService = queryService;
     }
 
-    /** The customer's bookings, one page at a time; {@code page} starts at 0. */
+    /** The customer's bookings, one page at a time; page starts at 0. */
     @GetMapping
     HistoryResponse history(@RequestParam BookingQueryService.View view,
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -65,16 +62,14 @@ class BookingController {
     }
 
     @PutMapping("/{id}/coupon")
-    BookingResponse applyCoupon(@PathVariable UUID id, @Valid @RequestBody CouponRequest request, CurrentUser user) {
+    BookingResponse applyCoupon(@PathVariable UUID id, @Valid @RequestBody ApplyCouponRequest request,
+            CurrentUser user) {
         return BookingResponse.from(holdService.changeCoupon(id, user.id(), request.code()));
     }
 
     @DeleteMapping("/{id}/coupon")
     BookingResponse removeCoupon(@PathVariable UUID id, CurrentUser user) {
         return BookingResponse.from(holdService.changeCoupon(id, user.id(), null));
-    }
-
-    record CouponRequest(@NotBlank @Size(max = 30) String code) {
     }
 
     /** 200 once the payment has an answer (declined included), 202 while it's still pending. */
@@ -93,7 +88,7 @@ class BookingController {
         return BookingResponse.from(holdService.release(id, user.id()));
     }
 
-    /** What cancelling now would refund. Without {@code seatIds}, every active seat. */
+    /** What cancelling now would refund. Without seatIds, every active seat. */
     @GetMapping("/{id}/refund-quote")
     RefundQuoteResponse refundQuote(@PathVariable UUID id, @RequestParam(required = false) Set<Long> seatIds,
             CurrentUser user) {
@@ -105,10 +100,6 @@ class BookingController {
     CancellationResponse cancel(@PathVariable UUID id, @Valid @RequestBody CancelRequest request,
             CurrentUser user) {
         return CancellationResponse.from(cancellationService.cancel(id, user.id(), orEmpty(request.seatIds())));
-    }
-
-    /** {@code seatIds} optional; leave it out to cancel every seat that's still active. */
-    record CancelRequest(Set<@NotNull Long> seatIds) {
     }
 
     /** Everything about one booking: seats, cancellations, and how the payment and any refunds stand. */

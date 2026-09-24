@@ -8,9 +8,7 @@ import java.util.Map;
  */
 public interface ShowApi {
 
-    /** @throws com.sumit.movieticketbookingsystem.shared.error.NotFoundException for an unknown id */
     ShowDetails show(long showId);
 
-    /** Batch lookup for lists; unknown ids are simply missing from the map. */
     Map<Long, ShowDetails> shows(Collection<Long> showIds);
 }

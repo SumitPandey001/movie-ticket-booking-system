@@ -3,9 +3,6 @@ package com.sumit.movieticketbookingsystem.catalog.internal.domain;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-/**
- * Reference data seeded by migration (REGULAR, PREMIUM, RECLINER); not editable through the API.
- */
 @Entity
 public class SeatCategory {
 

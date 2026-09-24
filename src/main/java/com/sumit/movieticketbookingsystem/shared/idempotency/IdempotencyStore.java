@@ -22,7 +22,7 @@ class IdempotencyStore {
         this.jdbc = jdbc;
     }
 
-    /** @return true if the key is now ours to run; false if someone else holds it (and it hasn't expired) */
+    // true if the key is now ours to run; false if someone else holds it and it hasn't expired
     boolean claim(UUID userId, String key, String requestHash, Instant now, Instant expiresAt) {
         return jdbc.sql("""
                         INSERT INTO idempotency_record (user_id, idem_key, request_hash, status, created_at, expires_at)
@@ -70,7 +70,6 @@ class IdempotencyStore {
         jdbc.sql("DELETE FROM idempotency_record WHERE user_id = ? AND idem_key = ?").params(userId, key).update();
     }
 
-    /** @return how many expired keys were removed */
     int deleteExpired(Instant now) {
         return jdbc.sql("DELETE FROM idempotency_record WHERE expires_at < ?").param(utc(now)).update();
     }

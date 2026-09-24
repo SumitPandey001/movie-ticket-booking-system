@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
-class CouponAdminService {
+public class CouponAdminService {
 
     private static final Pattern CODE = Pattern.compile("[A-Z0-9]{3,30}");
 
@@ -45,7 +45,6 @@ class CouponAdminService {
         return coupons.save(new Coupon(normalized, terms));
     }
 
-    /** @param code null, or the coupon's current code; codes never change */
     @Transactional
     public Coupon update(long id, String code, Terms terms) {
         Coupon coupon = find(id);

@@ -62,14 +62,12 @@ public class BookingQueryService {
     public record ShowInfo(String movieTitle, String theaterName) {
     }
 
-    /** @param seats read here, like {@link BookingDetails#cancellations}; one query loads a whole page's seats */
+    // seats are read inside the transaction; batch fetching loads a whole page's seats in one query
     public record BookingSummary(Booking booking, ShowInfo show, List<BookingSeat> seats) {
     }
 
-    /**
-     * @param cancellations oldest first; read here because the booking's own list isn't loaded outside this service
-     * @param payment       null until the booking is paid for
-     */
+    // cancellations are read here because the booking's own list can't be loaded once the transaction is over.
+    // payment is null until the booking is paid for.
     public record BookingDetails(Booking booking, ShowInfo show, List<Cancellation> cancellations,
                                  PaymentSummary payment) {
     }

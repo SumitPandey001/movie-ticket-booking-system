@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * An admin-defined day-of-week surcharge (a row of pricing_rule). {@link DayRuleRepository} picks the one that
+ * An admin-defined day-of-week surcharge (a row of pricing_rule). DayRuleRepository picks the one that
  * applies to a show; this class is for managing them.
  */
 @Entity
 @Table(name = "pricing_rule")
-class DayPricingRule extends AuditedEntity {
+public class DayPricingRule extends AuditedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -66,48 +66,48 @@ class DayPricingRule extends AuditedEntity {
     }
 
     /** Everything an admin sets on a rule; already validated by the service. */
-    record Definition(String name, RuleScope scope, Long scopeId, Set<Integer> daysOfWeek,
+    public record Definition(String name, RuleScope scope, Long scopeId, Set<Integer> daysOfWeek,
                       AdjustmentType adjustmentType, long adjustmentValue, LocalDate validFrom, LocalDate validTo,
                       boolean active) {
     }
 
-    Long getId() {
+    public Long getId() {
         return id;
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
-    RuleScope getScopeType() {
+    public RuleScope getScopeType() {
         return scopeType;
     }
 
-    Long getScopeId() {
+    public Long getScopeId() {
         return scopeId;
     }
 
-    List<Integer> getDaysOfWeek() {
+    public List<Integer> getDaysOfWeek() {
         return Arrays.stream(daysOfWeek).map(Short::intValue).toList();
     }
 
-    AdjustmentType getAdjustmentType() {
+    public AdjustmentType getAdjustmentType() {
         return adjustmentType;
     }
 
-    long getAdjustmentValue() {
+    public long getAdjustmentValue() {
         return adjustmentValue;
     }
 
-    LocalDate getValidFrom() {
+    public LocalDate getValidFrom() {
         return validFrom;
     }
 
-    LocalDate getValidTo() {
+    public LocalDate getValidTo() {
         return validTo;
     }
 
-    boolean isActive() {
+    public boolean isActive() {
         return active;
     }
 }

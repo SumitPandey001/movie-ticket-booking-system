@@ -5,8 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Reads behind the browse pages. {@link ShowSearchRepository} answers from Postgres;
- * {@link CachingShowQueryService} puts Redis in front of the busiest query.
+ * Reads behind the browse pages. ShowSearchRepository answers from Postgres;
+ * CachingShowQueryService puts Redis in front of the busiest query.
  */
 public interface ShowQueryService {
 

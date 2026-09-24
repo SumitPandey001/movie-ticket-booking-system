@@ -9,8 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The calculator for each discount type. Refuses to start if a type has none or two, so a new type can't
- * reach production half-done.
+ * The calculator for each discount type. Startup fails if a type has no calculator or two.
  */
 @Component
 class DiscountCalculatorRegistry {

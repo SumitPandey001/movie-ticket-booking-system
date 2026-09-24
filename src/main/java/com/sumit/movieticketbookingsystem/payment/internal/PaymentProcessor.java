@@ -5,8 +5,7 @@ import com.sumit.movieticketbookingsystem.payment.PaymentMethod;
 import com.sumit.movieticketbookingsystem.payment.SimulatedOutcome;
 
 /**
- * One payment method (Strategy). A real gateway would be another implementation (Adapter) of this same interface.
- * Every processor answers with a result; none throws "unsupported".
+ * One payment method. A real gateway would be another implementation of this interface.
  */
 interface PaymentProcessor {
 

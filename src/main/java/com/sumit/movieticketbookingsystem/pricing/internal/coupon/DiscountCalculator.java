@@ -1,7 +1,7 @@
 package com.sumit.movieticketbookingsystem.pricing.internal.coupon;
 
 /**
- * How much a coupon of one {@link DiscountType} takes off an order (Strategy).
+ * How much a coupon of one DiscountType takes off an order.
  */
 interface DiscountCalculator {
 

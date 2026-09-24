@@ -18,10 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * One version of a screen's seating. Seats can only change while the layout is a DRAFT; once ACTIVE it's
- * frozen, because shows copy their seats from it.
- */
 @Entity
 public class SeatLayout extends AuditedEntity {
 
@@ -60,7 +56,7 @@ public class SeatLayout extends AuditedEntity {
     }
 
     /**
-     * First half of editing a draft. The caller must flush before {@link #addSeats}, otherwise Hibernate
+     * First half of editing a draft. The caller must flush before addSeats, otherwise Hibernate
      * inserts the new seats before deleting the old ones and trips the unique seat-label constraint.
      */
     public void clearSeats() {

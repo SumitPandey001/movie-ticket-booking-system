@@ -1,6 +1,8 @@
 package com.sumit.movieticketbookingsystem.payment.internal;
 
 import com.sumit.movieticketbookingsystem.payment.RefundCompleted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,8 @@ import java.time.Instant;
  */
 @Component
 class RefundExecutor {
+
+    private static final Logger log = LoggerFactory.getLogger(RefundExecutor.class);
 
     private final RefundRepository refunds;
     private final PaymentRepository payments;
@@ -40,9 +44,13 @@ class RefundExecutor {
         ProcessorResult result = processors.forMethod(payment.getMethod()).refund(refund);
         if (result.outcome() != ProcessorResult.Outcome.SUCCEEDED) {
             refund.fail(Instant.now(clock));
+            log.warn("Refund {} for booking {} failed at the gateway: {}", refund.getId(), payment.getReference(),
+                    result.failureReason());
             return;
         }
         refund.complete(result.reference(), Instant.now(clock));
+        log.info("Refund {} for booking {} completed ({})", refund.getId(), payment.getReference(),
+                refund.getReason());
         events.publishEvent(new RefundCompleted(refund.getId(), refund.getBookingId(), payment.getCustomerId(),
                 payment.getReference(), refund.getAmountPaise(), refund.getReason()));
     }

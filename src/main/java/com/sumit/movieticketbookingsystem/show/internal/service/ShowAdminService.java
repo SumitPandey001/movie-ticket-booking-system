@@ -55,11 +55,8 @@ public class ShowAdminService {
         this.clock = clock;
     }
 
-    /**
-     * @param showDate       optional; defaults to the late-night rule in {@link ShowDateResolver}
-     * @param priceOverrides price in paise by category code, replacing the theater's default for this show
-     * @param refundPolicyId optional; the default policy applies when it's null
-     */
+    // showDate is optional and defaults to the late-night rule in ShowDateResolver. priceOverrides are paise by
+    // category code, replacing the theater's defaults for this show. refundPolicyId is optional too.
     public record CreateShow(long movieId, long screenId, Instant start, String language, String format,
                              LocalDate showDate, Map<String, Long> priceOverrides, Long refundPolicyId) {
     }
@@ -140,13 +137,13 @@ public class ShowAdminService {
         return show;
     }
 
-    /** @return the seats that couldn't be blocked: not available right now, or not part of the show */
+    // returns the seats that couldn't be blocked: not available right now, or not part of the show
     @Transactional
     public Set<Long> blockSeats(long showId, Set<Long> seatIds) {
         return inventory.block(find(showId).getId(), seatIds);
     }
 
-    /** @return the seats that weren't blocked */
+    // returns the seats that weren't blocked
     @Transactional
     public Set<Long> unblockSeats(long showId, Set<Long> seatIds) {
         return inventory.unblock(find(showId).getId(), seatIds);

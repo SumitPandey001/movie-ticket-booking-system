@@ -36,7 +36,7 @@ import java.util.HexFormat;
 import java.util.UUID;
 
 /**
- * Makes {@link Idempotent} endpoints safe to retry. The first request with a key runs and its answer is saved
+ * Makes Idempotent endpoints safe to retry. The first request with a key runs and its answer is saved
  * (business errors included); a retry with the same key and body gets that answer back without running again.
  * An unexpected failure forgets the key so the client can simply try again.
  */

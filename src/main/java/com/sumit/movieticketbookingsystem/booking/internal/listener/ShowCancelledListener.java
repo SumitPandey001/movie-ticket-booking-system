@@ -36,8 +36,8 @@ class ShowCancelledListener {
         this.cancellations = cancellations;
     }
 
-    // ponytail: loads every affected booking id at once; a show has at most a few hundred bookings. Page
-    // through them if screens ever get that big.
+    // Loads every affected booking id at once, which is fine for the few hundred bookings a show can have.
+    // Page through them if screens ever get much bigger.
     @ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)
     void on(ShowCancelled event) {
         List<UUID> bookingIds = bookings.findIdsByShowIdAndStatusIn(event.showId(), AFFECTED);
@@ -53,5 +53,6 @@ class ShowCancelledListener {
         if (failed > 0) {
             throw new IllegalStateException(failed + " bookings of show " + event.showId() + " still need cancelling");
         }
+        log.info("Show {} cancelled: {} bookings released or refunded", event.showId(), bookingIds.size());
     }
 }

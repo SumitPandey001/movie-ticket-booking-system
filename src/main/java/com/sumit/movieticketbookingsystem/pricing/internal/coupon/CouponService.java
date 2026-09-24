@@ -26,7 +26,7 @@ public class CouponService {
     public record Evaluation(long couponId, String code, long discountPaise) {
     }
 
-    /** @throws CouponInvalidException with the customer-facing reason */
+    // throws CouponInvalidException with the reason we show the customer
     public Evaluation evaluate(String code, CouponContext context) {
         Coupon coupon = coupons.findByCode(code.strip().toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new CouponInvalidException("There's no coupon " + code.strip()));

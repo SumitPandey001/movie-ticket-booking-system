@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
- * Records the caller in {@code app_user}. Runs after {@link CurrentUserInterceptor}, which has already
+ * Records the caller in app_user. Runs after CurrentUserInterceptor, which has already
  * rejected requests without a valid user.
  */
 class UserSyncInterceptor implements HandlerInterceptor {

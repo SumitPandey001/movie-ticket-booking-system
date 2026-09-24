@@ -30,8 +30,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// ponytail: no Redis cache in front of these yet; they're primary-key lookups. Add one (layouts first,
-// they never change once active) if they show up in a profile.
 @Service
 @Transactional(readOnly = true)
 class CatalogFacade implements CatalogApi {

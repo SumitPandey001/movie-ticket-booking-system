@@ -44,8 +44,6 @@ public class LayoutAdminService {
         if (!screen(screenId).isActive()) {
             throw new ValidationException("Screen " + screenId + " is inactive");
         }
-        // ponytail: two admins drafting the same screen at the same moment get a 500 from UNIQUE(screen_id, version);
-        // lock the screen row here if that ever matters
         int version = layouts.latestVersion(screenId) + 1;
         return layouts.save(SeatLayout.draft(screenId, version, plan, categoriesByCode()));
     }
@@ -54,7 +52,7 @@ public class LayoutAdminService {
     public SeatLayout editDraft(long layoutId, LayoutPlan plan) {
         SeatLayout layout = find(layoutId);
         layout.clearSeats();
-        layouts.flush();    // delete the old seats before inserting new ones with the same labels
+        layouts.flush();
         layout.addSeats(plan, categoriesByCode());
         return layout;
     }
@@ -66,7 +64,6 @@ public class LayoutAdminService {
             throw new InvalidStateException("Only draft layouts can be activated; layout " + layoutId
                     + " is " + layout.getStatus());
         }
-        // seat_layout_one_active is checked per statement, so the old layout must be retired in the database first
         layouts.findByScreenIdAndStatus(layout.getScreenId(), LayoutStatus.ACTIVE).ifPresent(current -> {
             current.retire();
             layouts.flush();

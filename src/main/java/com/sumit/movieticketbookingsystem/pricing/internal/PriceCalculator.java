@@ -11,7 +11,7 @@ class PriceCalculator {
 
     private final List<PricingRule> rules;
 
-    // Spring hands the rules over sorted by their @Order
+    // Spring hands the rules over already sorted by their Order
     PriceCalculator(List<PricingRule> rules) {
         this.rules = rules;
     }

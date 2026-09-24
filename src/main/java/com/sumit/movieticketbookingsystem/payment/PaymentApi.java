@@ -10,9 +10,8 @@ import java.util.UUID;
 public interface PaymentApi {
 
     /**
-     * Checks the payment details and records an INITIATED payment. Joins the caller's transaction.
-     *
-     * @throws com.sumit.movieticketbookingsystem.shared.error.ValidationException for details that can't be charged
+     * Checks the payment details and records an INITIATED payment, in the caller's transaction. Details that
+     * can't be charged are rejected with a ValidationException.
      */
     UUID initiate(InitiatePayment payment);
 
@@ -23,11 +22,10 @@ public interface PaymentApi {
     PaymentResult execute(UUID paymentId, PaymentDetails details, SimulatedOutcome outcome);
 
     /**
-     * Refunds part or all of the booking's successful payment. Joins the caller's transaction; the money moves
-     * after commit, and a {@link RefundCompleted} event follows. A booking's late-payment refund is only ever
-     * requested once; asking again returns the existing one.
-     *
-     * @throws IllegalStateException if the booking has no successful payment or the refund would exceed it
+     * Refunds part or all of the booking's successful payment, in the caller's transaction; the money moves after
+     * commit and a RefundCompleted event follows. A booking's late-payment refund is only ever requested once:
+     * asking again returns the existing one. Throws IllegalStateException if there's no successful payment or the
+     * refund would be more than was paid.
      */
     UUID requestRefund(RefundRequest request);
 

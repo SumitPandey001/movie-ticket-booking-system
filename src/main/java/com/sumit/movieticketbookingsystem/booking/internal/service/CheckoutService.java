@@ -16,13 +16,17 @@ import com.sumit.movieticketbookingsystem.payment.RefundRequest;
 import com.sumit.movieticketbookingsystem.payment.SimulatedOutcome;
 import com.sumit.movieticketbookingsystem.pricing.CouponApi;
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
+import com.sumit.movieticketbookingsystem.shared.Money;
 import com.sumit.movieticketbookingsystem.show.ShowApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -34,6 +38,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class CheckoutService {
+
+    private static final Logger log = LoggerFactory.getLogger(CheckoutService.class);
 
     private final BookingRepository bookings;
     private final PaymentApi payments;
@@ -64,8 +70,8 @@ public class CheckoutService {
     public record Checkout(Booking booking, PaymentResult payment) {
     }
 
-    // TransactionTemplate rather than @Transactional: the steps are private and called from here, where
-    // Spring's proxy-based @Transactional wouldn't apply.
+    // TransactionTemplate rather than a Transactional annotation: the steps are private methods called from
+    // here, and Spring's proxy-based transactions don't apply to those.
     public Checkout pay(UUID bookingId, UUID userId, PaymentDetails details, SimulatedOutcome outcome) {
         UUID paymentId = tx.execute(status -> startPayment(bookingId, userId, details));
         PaymentResult result = payments.execute(paymentId, details, outcome);
@@ -112,7 +118,7 @@ public class CheckoutService {
     }
 
     /**
-     * @return the confirmed booking, or null if it can no longer be confirmed (so the payment must go back).
+     * Returns the confirmed booking, or null when it can no longer be confirmed and the payment has to go back.
      * The row is locked before the show is checked, so a show cancellation either sees this booking confirmed
      * and refunds it, or this sees the show cancelled.
      */
@@ -134,6 +140,8 @@ public class CheckoutService {
         coupons.consume(bookingId);
         booking.confirm(refundPolicies.snapshotForShow(booking.getShowId()), now);
         events.confirmed(booking);
+        log.info("Booking {} confirmed: {} for {}", booking.getBookingRef(), labels(booking.getSeats()),
+                Money.ofPaise(booking.getTotals().total()).inRupees());
         return booking;
     }
 
@@ -145,10 +153,15 @@ public class CheckoutService {
         booking.fail(Instant.now(clock));
         inventory.releaseHeld(booking.getShowId(), bookingId);
         coupons.release(bookingId);
+        log.info("Payment for booking {} declined; seats released", booking.getBookingRef());
         return booking;
     }
 
-    /** The money came in but the seats are gone: close the booking and give every paisa back. */
+    private static String labels(List<BookingSeat> seats) {
+        return seats.stream().map(BookingSeat::seatLabel).collect(Collectors.joining(", "));
+    }
+
+    /** The money came in but the seats are gone: close the booking and refund it in full. */
     private Booking refundLatePayment(UUID bookingId) {
         Booking booking = bookings.findById(bookingId).orElseThrow();
         if (booking.getStatus().holdsSeats()) {
@@ -158,6 +171,8 @@ public class CheckoutService {
         }
         payments.requestRefund(
                 new RefundRequest(bookingId, null, booking.getTotals().total(), RefundReason.LATE_PAYMENT));
+        log.warn("Payment for booking {} arrived after its seats were lost; refunding {}", booking.getBookingRef(),
+                Money.ofPaise(booking.getTotals().total()).inRupees());
         return booking;
     }
 }

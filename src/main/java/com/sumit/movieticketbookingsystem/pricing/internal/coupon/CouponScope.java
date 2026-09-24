@@ -6,7 +6,7 @@ import jakarta.persistence.Enumerated;
 
 /**
  * Limits where a coupon works, e.g. (CITY, 1). Scopes of the same type are alternatives; different types must
- * all match. {@code CATEGORY} means the order must contain a seat of that category.
+ * all match. CATEGORY means the order must contain a seat of that category.
  */
 @Embeddable
 public record CouponScope(@Enumerated(EnumType.STRING) Type scopeType, long scopeId) {

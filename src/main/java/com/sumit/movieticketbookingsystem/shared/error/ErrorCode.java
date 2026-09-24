@@ -3,7 +3,7 @@ package com.sumit.movieticketbookingsystem.shared.error;
 import org.springframework.http.HttpStatus;
 
 /**
- * Stable error codes returned to clients in the {@code code} field of every error response.
+ * Stable error codes returned to clients in the code field of every error response.
  * Clients branch on these, so never rename one once it has shipped.
  */
 public enum ErrorCode {

@@ -11,12 +11,10 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 /**
- * <pre>
  * { "rows": [ { "label": "A", "segments": [ { "from": 1, "to": 8, "category": "REGULAR" },
  *                                           { "aisle": 2 },
  *                                           { "from": 9, "to": 16, "category": "REGULAR" } ] } ],
  *   "blocked": ["A5"], "wheelchair": ["A1"] }
- * </pre>
  */
 record LayoutRequest(
         @NotEmpty List<@Valid Row> rows,
@@ -26,7 +24,6 @@ record LayoutRequest(
     record Row(@NotBlank String label, @NotEmpty List<Segment> segments) {
     }
 
-    /** Either a run of seats ({@code from}, {@code to}, {@code category}) or an {@code aisle} width. */
     record Segment(Integer from, Integer to, String category, Integer aisle) {
     }
 

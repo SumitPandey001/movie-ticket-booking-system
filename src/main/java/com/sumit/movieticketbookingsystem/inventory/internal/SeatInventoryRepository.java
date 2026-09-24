@@ -121,7 +121,7 @@ class SeatInventoryRepository {
                 .update();
     }
 
-    /** Seats left per show, counting holds that ran out before {@code now} as available. */
+    /** Seats left per show, counting holds that ran out before now as available. */
     Map<Long, Integer> availableCounts(Collection<Long> showIds, Instant now) {
         Map<Long, Integer> counts = new HashMap<>();
         if (showIds.isEmpty()) {

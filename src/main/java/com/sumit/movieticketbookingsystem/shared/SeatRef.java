@@ -4,7 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A seat by row and number, written as a label like {@code F7} or {@code AA12}.
+ * A seat by row and number, written as a label like F7 or AA12.
  */
 public record SeatRef(String rowLabel, int seatNumber) {
 

@@ -79,9 +79,9 @@ class PricingFacade implements PricingApi {
         return calculator.quote(request);
     }
 
-    // ponytail: price_from is worked out when a show's prices are set, so a pricing rule added or changed later
-    // doesn't reach shows that already exist (quotes and the seat map always use the current rules). Add a refresh
-    // over the affected shows if admins start editing rules often.
+    // price_from is worked out when a show's prices are set, so a pricing rule added or changed later doesn't
+    // reach shows that already exist (quotes and the seat map always use the current rules). If admins start
+    // editing rules often, refresh price_from for the shows a rule affects.
     private long lowestDisplayPrice(ShowPricing show) {
         return displayPrices(show).values().stream().mapToLong(Long::longValue).min()
                 .orElseThrow(() -> new IllegalStateException("Show " + show.showId() + " has no prices"));

@@ -6,6 +6,8 @@ import com.sumit.movieticketbookingsystem.booking.internal.service.BookingEvents
 import com.sumit.movieticketbookingsystem.shared.BookingProperties;
 import com.sumit.movieticketbookingsystem.shared.job.BatchJob;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Limit;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -19,12 +21,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Reminds customers shortly before their show. Marking the booking and publishing {@code ReminderDue} happen in
- * one transaction, so the reminder is stored in the outbox exactly when the booking is marked: never lost, never
- * sent twice. A booking confirmed inside the lead time is reminded on the next run.
+ * Reminds customers shortly before their show. Marking the booking and publishing ReminderDue happen in one
+ * transaction, so the reminder goes into the outbox together with the mark and can't be lost or sent twice.
+ * A booking confirmed inside the lead time is reminded on the next run.
  */
 @Component
 class ReminderJob extends BatchJob<UUID> {
+
+    private static final Logger log = LoggerFactory.getLogger(ReminderJob.class);
 
     private static final int BATCH_SIZE = 200;
 
@@ -45,7 +49,10 @@ class ReminderJob extends BatchJob<UUID> {
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     @SchedulerLock(name = "showReminder")
     void run() {
-        runOnce();
+        int reminded = runOnce();
+        if (reminded > 0) {
+            log.info("Queued reminders for {} bookings", reminded);
+        }
     }
 
     @Override

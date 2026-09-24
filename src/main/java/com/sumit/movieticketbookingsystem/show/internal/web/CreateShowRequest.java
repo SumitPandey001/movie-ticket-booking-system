@@ -10,9 +10,9 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * {@code startTime} carries its offset, e.g. {@code 2026-10-03T18:15:00+05:30}. {@code showDate} is optional.
- * {@code priceOverrides} is optional too: price in paise by category code, replacing the theater's default.
- * {@code refundPolicyId} is optional; without it the default refund policy applies.
+ * startTime carries its offset, e.g. 2026-10-03T18:15:00+05:30. showDate is optional.
+ * priceOverrides is optional too: price in paise by category code, replacing the theater's default.
+ * refundPolicyId is optional; without it the default refund policy applies.
  */
 record CreateShowRequest(
         @NotNull Long movieId,

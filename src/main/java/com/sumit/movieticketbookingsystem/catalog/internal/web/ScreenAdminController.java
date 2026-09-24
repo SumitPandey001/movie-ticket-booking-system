@@ -23,7 +23,7 @@ class ScreenAdminController {
     }
 
     @PutMapping("/{id}")
-    ScreenResponse rename(@PathVariable long id, @Valid @RequestBody TheaterRequests.ScreenName request) {
+    ScreenResponse rename(@PathVariable long id, @Valid @RequestBody ScreenNameRequest request) {
         return ScreenResponse.from(theaterService.renameScreen(id, request.name()));
     }
 

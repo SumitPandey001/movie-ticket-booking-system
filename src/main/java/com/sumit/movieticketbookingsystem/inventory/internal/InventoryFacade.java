@@ -48,7 +48,6 @@ class InventoryFacade implements InventoryApi {
             if (!isLockNotAvailable(e)) {
                 throw e;
             }
-            // another hold has some of these rows locked right now; to the customer that's "taken"
             throw new SeatsUnavailableException(seatIds);
         }
         if (claimed.size() < seatIds.size()) {

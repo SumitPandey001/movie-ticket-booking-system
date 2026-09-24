@@ -23,9 +23,7 @@ class ShowDateResolver {
         this.lateNightCutoff = properties.lateNightCutoff();
     }
 
-    /**
-     * @param requested the admin's choice, if any; only the calendar date or the day before make sense
-     */
+    // requested is the admin's choice, if any; only the calendar date or the day before make sense
     LocalDate showDate(Instant start, ZoneId zone, LocalDate requested) {
         if (requested == null) {
             return listingDate(start, zone);

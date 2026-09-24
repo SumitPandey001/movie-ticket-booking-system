@@ -15,7 +15,7 @@ public final class TestDates {
     private TestDates() {
     }
 
-    /** The first Monday-to-Friday date at least {@code daysAhead} days from today. */
+    /** The first Monday-to-Friday date at least daysAhead days from today. */
     public static LocalDate weekday(int daysAhead) {
         LocalDate date = LocalDate.now(IST).plusDays(daysAhead);
         while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
@@ -24,7 +24,7 @@ public final class TestDates {
         return date;
     }
 
-    /** The first Saturday at least {@code daysAhead} days from today. */
+    /** The first Saturday at least daysAhead days from today. */
     public static LocalDate saturday(int daysAhead) {
         LocalDate date = LocalDate.now(IST).plusDays(daysAhead);
         while (date.getDayOfWeek() != DayOfWeek.SATURDAY) {

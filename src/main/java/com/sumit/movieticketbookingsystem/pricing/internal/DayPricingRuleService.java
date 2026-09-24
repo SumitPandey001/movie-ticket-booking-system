@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-class DayPricingRuleService {
+public class DayPricingRuleService {
 
     private static final int MAX_PERCENT = 100;
 
@@ -42,7 +42,6 @@ class DayPricingRuleService {
         return rule;
     }
 
-    // Prices are frozen on bookings, so nothing refers to a rule once it's gone.
     @Transactional
     public void delete(long id) {
         rules.delete(find(id));

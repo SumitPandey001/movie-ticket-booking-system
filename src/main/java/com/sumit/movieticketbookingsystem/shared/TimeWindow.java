@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Half-open interval {@code [from, to)}.
+ * Half-open interval [from, to).
  */
 public record TimeWindow(Instant from, Instant to) {
 

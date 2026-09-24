@@ -112,7 +112,7 @@ class EventPublicationJobsIT {
                 .param("%" + ping.id() + "%").query(Long.class).single();
     }
 
-    /** @param failures how many deliveries fail before one succeeds */
+    // failures is how many deliveries fail before one succeeds
     record Ping(UUID id, int failures) {
     }
 

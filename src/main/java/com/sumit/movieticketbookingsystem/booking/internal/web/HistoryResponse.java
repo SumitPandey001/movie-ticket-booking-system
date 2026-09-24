@@ -17,7 +17,7 @@ record HistoryResponse(List<Item> items, int page, int size, long totalItems, in
                 found.getTotalElements(), found.getTotalPages());
     }
 
-    /** @param seats the seats still booked; cancelled ones are listed apart */
+    // seats are the ones still booked; cancelled seats are listed separately
     record Item(UUID bookingId, String bookingRef, BookingStatus status, String movieTitle, String theaterName,
                 Instant showStartTime, List<String> seats, List<String> cancelledSeats, long totalPaise) {
 

@@ -3,7 +3,7 @@ package com.sumit.movieticketbookingsystem.shared.error;
 import java.util.Map;
 
 /**
- * Base for business errors that should reach the client as a 4xx with a specific {@link ErrorCode}.
+ * Base for business errors that should reach the client as a 4xx with a specific ErrorCode.
  */
 public abstract class DomainException extends RuntimeException {
 

@@ -15,7 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.util.List;
 
 /**
- * Turns every exception into a {@link ProblemDetail} carrying one of our {@link ErrorCode}s.
+ * Turns every exception into a ProblemDetail carrying one of our ErrorCodes.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {

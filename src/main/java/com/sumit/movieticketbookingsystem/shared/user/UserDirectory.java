@@ -9,14 +9,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Keeps {@code app_user} in step with what the gateway tells us, so background work (notifications) can reach a
+ * Keeps app_user in step with what the gateway tells us, so background work (notifications) can reach a
  * user after their request is long gone.
  */
 @Component
 public class UserDirectory {
 
-    // ponytail: grows with every user this instance has seen and is lost on restart; swap for a bounded cache
-    // if the user base gets large
+    // Grows with every user this instance has seen and is lost on restart. Fine at this scale; switch to a
+    // bounded cache if the user base gets large.
     private final Map<UUID, CurrentUser> synced = new ConcurrentHashMap<>();
 
     private final JdbcClient jdbc;

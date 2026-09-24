@@ -27,7 +27,7 @@ class SchedulingConfig {
                 .build());
     }
 
-    /** The schedules themselves; {@code jobs.enabled=false} turns them off (tests run jobs by hand). */
+    /** The schedules themselves; jobs.enabled=false turns them off (tests run jobs by hand). */
     @Configuration(proxyBeanMethods = false)
     @EnableScheduling
     @ConditionalOnBooleanProperty(name = "jobs.enabled", matchIfMissing = true)
