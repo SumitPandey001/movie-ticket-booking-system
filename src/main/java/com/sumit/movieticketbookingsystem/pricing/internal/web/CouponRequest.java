@@ -1,7 +1,6 @@
 package com.sumit.movieticketbookingsystem.pricing.internal.web;
 
 import com.sumit.movieticketbookingsystem.pricing.internal.coupon.Coupon.Terms;
-import com.sumit.movieticketbookingsystem.pricing.internal.coupon.Coupon.Terms;
 import com.sumit.movieticketbookingsystem.pricing.internal.coupon.CouponScope;
 import com.sumit.movieticketbookingsystem.pricing.internal.coupon.DiscountType;
 import jakarta.validation.constraints.Min;

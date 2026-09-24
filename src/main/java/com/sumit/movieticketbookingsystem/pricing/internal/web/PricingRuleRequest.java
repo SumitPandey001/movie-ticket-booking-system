@@ -2,7 +2,6 @@ package com.sumit.movieticketbookingsystem.pricing.internal.web;
 
 import com.sumit.movieticketbookingsystem.pricing.internal.AdjustmentType;
 import com.sumit.movieticketbookingsystem.pricing.internal.DayPricingRule.Definition;
-import com.sumit.movieticketbookingsystem.pricing.internal.DayPricingRule.Definition;
 import com.sumit.movieticketbookingsystem.pricing.internal.RuleScope;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
