@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/theaters")
@@ -28,6 +31,11 @@ class TheaterAdminController {
     TheaterResponse create(@Valid @RequestBody TheaterRequests.Create request) {
         return TheaterResponse.from(
                 theaterService.create(request.cityId(), request.name(), request.area(), request.address()));
+    }
+
+    @GetMapping
+    List<TheaterResponse> theaters(@RequestParam long cityId) {
+        return theaterService.theaters(cityId).stream().map(TheaterResponse::from).toList();
     }
 
     @GetMapping("/{id}")
