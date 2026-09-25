@@ -17,7 +17,7 @@ All files are copies; the originals are still in place. The only edits are redac
 
 ## Instruction files and skills
 - **During development there was no `CLAUDE.md` or `AGENTS.md`.** The working rules lived in Claude Code's auto-memory, which loads into every session. Those four files are copied verbatim in [agent-instructions/claude-memory](agent-instructions/claude-memory).
-- The root [`CLAUDE.md`](../CLAUDE.md) was **written at submission time (2026-09-25), at the user's request**, as a condensed version of those memory files. It wasn't used during development and is untracked, so there's no git history for it or any other repo-level instruction file.
+- The root [`CLAUDE.md`](agent-instructions/claude-memory/CLAUDE.md) was **written at submission time (2026-09-25), at the user's request**, as a condensed version of those memory files. It wasn't used during development and is untracked, so there's no git history for it or any other repo-level instruction file.
 - **Skills:** none were invoked. Two plugins (ponytail, superpowers) were auto-injected by hooks. See [skills/INDEX.md](skills/INDEX.md).
 
 ## Redactions
@@ -37,7 +37,7 @@ The `.md` rendering of each transcript shows prompts, replies and one-line tool-
 | Memory: setup decisions | [agent-instructions/claude-memory/project-setup-decisions.md](agent-instructions/claude-memory/project-setup-decisions.md) |
 | Memory: no Lombok | [agent-instructions/claude-memory/no-lombok.md](agent-instructions/claude-memory/no-lombok.md) |
 | Codex user AGENTS.md (empty) | [agent-instructions/codex/AGENTS.md](agent-instructions/codex/AGENTS.md) |
-| Submission-time CLAUDE.md | [../CLAUDE.md](../CLAUDE.md) |
+| Submission-time CLAUDE.md | [../CLAUDE.md](agent-instructions/claude-memory/CLAUDE.md) |
 | Skills index | [skills/INDEX.md](skills/INDEX.md) |
 | Session 08709c25 (09-23, `/model` only) | [jsonl](raw/transcripts/08709c25-1210-4b87-8b71-a3490906c3cf.jsonl) · [md](raw/transcripts/08709c25-1210-4b87-8b71-a3490906c3cf.md) |
 | Session 197530cb (09-23→25, main build M1–M8, docs, prototypes) | [jsonl](raw/transcripts/197530cb-ad91-4d63-aa6f-8facec417fba.jsonl) · [md](raw/transcripts/197530cb-ad91-4d63-aa6f-8facec417fba.md) |
