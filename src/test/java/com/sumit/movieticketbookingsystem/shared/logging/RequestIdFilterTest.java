@@ -20,11 +20,14 @@ class RequestIdFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicReference<String> seen = new AtomicReference<>();
 
-        filter.doFilter(request, response, (req, res) -> seen.set(MDC.get(RequestIdFilter.MDC_KEY)));
+        filter.doFilter(request, response, (req, res) -> {
+            seen.set(MDC.get(RequestIdFilter.MDC_KEY));
+            MDC.put("userId", "someone");
+        });
 
         assertThat(seen.get()).isEqualTo("abc-123");
         assertThat(response.getHeader(RequestIdFilter.HEADER)).isEqualTo("abc-123");
-        assertThat(MDC.get(RequestIdFilter.MDC_KEY)).isNull();
+        assertThat(MDC.getCopyOfContextMap()).isNullOrEmpty();
     }
 
     @Test

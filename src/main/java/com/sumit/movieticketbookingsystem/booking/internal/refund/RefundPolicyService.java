@@ -5,6 +5,8 @@ import com.sumit.movieticketbookingsystem.shared.error.AlreadyExistsException;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
 import com.sumit.movieticketbookingsystem.show.ShowApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,8 @@ import java.util.List;
 
 @Service
 public class RefundPolicyService {
+
+    private static final Logger log = LoggerFactory.getLogger(RefundPolicyService.class);
 
     private final RefundPolicyRepository policies;
     private final ShowApi shows;
@@ -34,7 +38,9 @@ public class RefundPolicyService {
 
     @Transactional
     public RefundPolicy create(Terms terms) {
-        return policies.save(new RefundPolicy(validated(terms, 0)));
+        RefundPolicy policy = policies.save(new RefundPolicy(validated(terms, 0)));
+        log.info("Refund policy {} created: {}", policy.getId(), terms);
+        return policy;
     }
 
     /** Bookings already confirmed keep the terms they were sold under. */
@@ -42,6 +48,7 @@ public class RefundPolicyService {
     public RefundPolicy update(long id, Terms terms) {
         RefundPolicy policy = find(id);
         policy.update(validated(terms, id));
+        log.info("Refund policy {} updated: {}", id, terms);
         return policy;
     }
 
@@ -54,6 +61,7 @@ public class RefundPolicyService {
             policies.flush();
         });
         policy.makeDefault(true);
+        log.info("Refund policy {} is now the default", id);
         return policy;
     }
 

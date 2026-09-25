@@ -6,6 +6,8 @@ import com.sumit.movieticketbookingsystem.pricing.internal.coupon.Coupon.Terms;
 import com.sumit.movieticketbookingsystem.shared.error.AlreadyExistsException;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,8 @@ import java.util.regex.Pattern;
 
 @Service
 public class CouponAdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(CouponAdminService.class);
 
     private static final Pattern CODE = Pattern.compile("[A-Z0-9]{3,30}");
 
@@ -42,7 +46,9 @@ public class CouponAdminService {
             throw new AlreadyExistsException("Coupon", normalized);
         }
         validate(terms, 0);
-        return coupons.save(new Coupon(normalized, terms));
+        Coupon coupon = coupons.save(new Coupon(normalized, terms));
+        log.info("Coupon {} created: {}", normalized, terms);
+        return coupon;
     }
 
     @Transactional
@@ -53,12 +59,15 @@ public class CouponAdminService {
         }
         validate(terms, coupon.getUsedCount());
         coupon.update(terms);
+        log.info("Coupon {} updated: {}", coupon.getCode(), terms);
         return coupon;
     }
 
     @Transactional
     public void deactivate(long id) {
-        find(id).deactivate();
+        Coupon coupon = find(id);
+        coupon.deactivate();
+        log.info("Coupon {} deactivated", coupon.getCode());
     }
 
     private void validate(Terms terms, int usedSoFar) {
