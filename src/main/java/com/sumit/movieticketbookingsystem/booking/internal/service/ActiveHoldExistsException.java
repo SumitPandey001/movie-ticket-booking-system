@@ -8,16 +8,24 @@ import java.util.UUID;
 
 class ActiveHoldExistsException extends DomainException {
 
-    private final UUID bookingId;
+    private final Map<String, Object> details;
 
-    // bookingId is null when a parallel request has just created the hold and we don't know its id
     ActiveHoldExistsException(UUID bookingId) {
+        this(Map.of("bookingId", bookingId));
+    }
+
+    // a parallel request has just created the hold, so its id isn't known yet
+    ActiveHoldExistsException() {
+        this(Map.of());
+    }
+
+    private ActiveHoldExistsException(Map<String, Object> details) {
         super(ErrorCode.ACTIVE_HOLD_EXISTS, "You already have seats on hold for this show");
-        this.bookingId = bookingId;
+        this.details = details;
     }
 
     @Override
     public Map<String, Object> details() {
-        return bookingId == null ? Map.of() : Map.of("bookingId", bookingId);
+        return details;
     }
 }

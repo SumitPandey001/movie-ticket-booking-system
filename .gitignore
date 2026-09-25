@@ -2,8 +2,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 
 ### IntelliJ IDEA ###
-.idea/workspace.xml
-.idea/shelf/
+.idea/
 *.iml
 
 ### OS ###

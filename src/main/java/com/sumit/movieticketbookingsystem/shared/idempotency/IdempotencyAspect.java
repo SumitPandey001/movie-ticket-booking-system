@@ -90,7 +90,7 @@ class IdempotencyAspect {
         } catch (DomainException e) {
             store.complete(userId, key, e.code().status().value(), json.writeValueAsString(SavedError.of(e)));
             throw e;
-        } catch (Throwable e) {
+        } catch (Throwable e) {   // Errors too: a key left claimed would answer every retry with 409 for a day
             store.delete(userId, key);
             throw e;
         }

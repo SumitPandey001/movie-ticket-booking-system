@@ -67,4 +67,3 @@ booking:
     simulated-delay: PT15S                      # how long a DELAYED simulated payment takes to succeed
     net-banking-banks: [HDFC, ICICI, SBI, AXIS, KOTAK]
     wallets: [PAYTM, PHONEPE, AMAZONPAY]
-

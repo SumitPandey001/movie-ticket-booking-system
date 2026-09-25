@@ -102,7 +102,7 @@ public class HoldService {
             return saved;
         } catch (DataIntegrityViolationException e) {
             if (ConstraintViolations.isViolationOf(e, "booking_one_active_hold")) {
-                throw new ActiveHoldExistsException(null);   // a parallel request from the same customer won
+                throw new ActiveHoldExistsException();   // a parallel request from the same customer won
             }
             throw e;
         }
