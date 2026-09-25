@@ -26,6 +26,8 @@ spring:
     hibernate:
       ddl-auto: validate
 logging:
+  pattern:
+    correlation: "[%X{requestId:-},%X{userId:-}] "   # request and caller ids; empty for scheduled jobs
   level:
     # Hibernate warns on every constraint violation, including the ones we turn into 409s on purpose
     # (show overlap ...). Real failures are still logged by GlobalExceptionHandler.
@@ -65,11 +67,4 @@ booking:
     simulated-delay: PT15S                      # how long a DELAYED simulated payment takes to succeed
     net-banking-banks: [HDFC, ICICI, SBI, AXIS, KOTAK]
     wallets: [PAYTM, PHONEPE, AMAZONPAY]
-#spring:
-#  config:
-#    activate:
-#      on-profile: local
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/moviebooking
-#    username: postgres
-#    password: alex@123
+
