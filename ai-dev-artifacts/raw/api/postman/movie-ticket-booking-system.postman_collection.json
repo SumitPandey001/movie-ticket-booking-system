@@ -1,0 +1,3053 @@
+{
+  "info": {
+    "name": "Movie Ticket Booking System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Every endpoint of the movie ticket booking backend, in the order you'd use them: set up the catalog, price it,\nschedule a show, browse, book, pay, cancel, and finally cancel the show.\n\n**Run the whole collection** (Collection Runner, or `npx newman run`) against an empty or used database: each\nrequest saves the ids the next ones need, every name gets a per-run suffix, and every request has tests.\nRequests can also be sent one by one, top to bottom.\n\nSet `baseUrl` (default `http://localhost:8080`). User ids are generated on the first request.\n\nAmounts are in **paise** (₹1 = 100 paise). Times are ISO-8601 with an offset. Errors are RFC 9457\n`application/problem+json` with a stable `code`. See `docs/USAGE.md` for the full guide."
+  },
+  "item": [
+    {
+      "name": "0. Before you start",
+      "description": "Shows what every request needs. The gateway in front of this service authenticates callers and forwards who they\nare as headers; here you set them yourself:\n\n| Header | Required | Notes |\n|---|---|---|\n| `X-User-Id` | yes | a UUID |\n| `X-User-Role` | yes | `ADMIN` or `CUSTOMER` |\n| `X-User-Name`, `X-User-Email`, `X-User-Phone` | no | stored so emails and SMS can reach the customer |\n\n`/api/v1/admin/**` is for admins only.",
+      "item": [
+        {
+          "name": "Missing user header → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/cities",
+            "description": "Without `X-User-Id` (or with an invalid one) every `/api/v1/**` call is `401 UNAUTHENTICATED`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// fresh names, ids and dates on every run, so the collection can be run again on the same database",
+                  "{",
+                  "    pm.collectionVariables.set('runId', Date.now().toString(36).toUpperCase());",
+                  "    const day = new Date(Date.now() + 3 * 86400000);",
+                  "    const date = day.toISOString().slice(0, 10);",
+                  "    pm.collectionVariables.set('showDate', date);",
+                  "    pm.collectionVariables.set('showStart', date + 'T18:15:00+05:30');",
+                  "    pm.collectionVariables.set('overlappingStart', date + 'T20:00:00+05:30');",
+                  "    pm.collectionVariables.set('validFrom', new Date(Date.now() - 86400000).toISOString());",
+                  "    pm.collectionVariables.set('validTo', new Date(Date.now() + 30 * 86400000).toISOString());",
+                  "    for (const who of ['adminId', 'ashaId', 'raviId', 'meeraId', 'kabirId', 'zoyaId']) {",
+                  "        pm.collectionVariables.set(who, pm.variables.replaceIn('{{$guid}}'));",
+                  "    }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code UNAUTHENTICATED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer on an admin path → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/coupons",
+            "description": "Admin endpoints reject customers with `403 FORBIDDEN`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code FORBIDDEN', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Catalog (admin)",
+      "description": "Cities, theaters, screens, seat layouts and movies: the things shows are scheduled on. Nothing is ever hard-deleted;\n`deactivate` hides a row from customers and from new shows while keeping history intact.",
+      "item": [
+        {
+          "name": "Create a city",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/cities",
+            "description": "Creates a city. `timezone` is optional and defaults to `Asia/Kolkata`; show times are listed in it.\n\nNames are unique (`409 ALREADY_EXISTS`).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Bengaluru {{runId}}\", \"state\": \"Karnataka\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('cityId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update the city",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/cities/{{cityId}}",
+            "description": "Renames a city or changes its state or timezone.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Bangalore {{runId}}\", \"state\": \"Karnataka\", \"timezone\": \"Asia/Kolkata\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List active cities (customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/cities",
+            "description": "The city picker: every active city."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('our city is listed', () => pm.expect(pm.response.json().map(c => c.id)).to.include(Number(pm.collectionVariables.get('cityId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a theater",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters",
+            "description": "A theater belongs to one city for life (the city can't be changed later).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cityId\": {{cityId}}, \"name\": \"PVR Forum {{runId}}\", \"area\": \"Koramangala\", \"address\": \"Hosur Road\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('theaterId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update the theater",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters/{{theaterId}}",
+            "description": "Name, area and address.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"PVR Forum Mall {{runId}}\", \"area\": \"Koramangala\", \"address\": \"Hosur Road\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add a screen",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/screens",
+            "description": "Screens get a seat layout next; a screen without an active layout can't host shows.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Audi 1\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('screenId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rename the screen",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/screens/{{screenId}}",
+            "description": "Renames a screen.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Audi 1 (IMAX)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Theater with its screens",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters/{{theaterId}}",
+            "description": "One theater, including its screens."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set default seat prices",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/prices",
+            "description": "The theater's price per seat category, **in paise** (30000 = ₹300). New shows copy these; a show can override them.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"prices\": {\"REGULAR\": 30000, \"PREMIUM\": 36000, \"RECLINER\": 60000}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current default prices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/prices",
+            "description": "Prices by category code."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Draft a seat layout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/screens/{{screenId}}/layouts",
+            "description": "Describes the seat grid row by row. Each row is a list of segments: a run of seats (`from`–`to`, with a category) or an `aisle` gap of N columns. `blocked` seats are never sold (a pillar); `wheelchair` seats are marked as such.\n\nA new layout starts as a DRAFT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"rows\": [\n   {\"label\": \"A\", \"segments\": [{\"from\": 1, \"to\": 8, \"category\": \"REGULAR\"}, {\"aisle\": 2},\n                               {\"from\": 9, \"to\": 16, \"category\": \"REGULAR\"}]},\n   {\"label\": \"B\", \"segments\": [{\"from\": 1, \"to\": 8, \"category\": \"PREMIUM\"}, {\"aisle\": 2},\n                               {\"from\": 9, \"to\": 16, \"category\": \"PREMIUM\"}]},\n   {\"label\": \"J\", \"segments\": [{\"aisle\": 2}, {\"from\": 1, \"to\": 8, \"category\": \"RECLINER\"}]}],\n \"blocked\": [\"A5\"], \"wheelchair\": [\"J7\", \"J8\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('layoutId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit the draft",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/layouts/{{layoutId}}",
+            "description": "Only a DRAFT can be edited. Once active, a layout never changes: shows keep the version they were created on, and the next change is a new draft.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"rows\": [\n   {\"label\": \"A\", \"segments\": [{\"from\": 1, \"to\": 10, \"category\": \"REGULAR\"}]},\n   {\"label\": \"B\", \"segments\": [{\"from\": 1, \"to\": 10, \"category\": \"PREMIUM\"}]}],\n \"blocked\": [\"A5\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activate the layout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/layouts/{{layoutId}}/activate",
+            "description": "Makes the draft the screen's ACTIVE layout; the previous active one is RETIRED. New shows on the screen use it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ACTIVE', () => pm.expect(pm.response.json().status).to.eql('ACTIVE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "All layout versions of the screen",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/screens/{{screenId}}/layouts",
+            "description": "Every version, newest first, with its status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a movie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/movies",
+            "description": "`durationMin` sets how long the screen is taken by each show (plus a 20-minute cleaning buffer).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Kalki 2898 AD {{runId}}\", \"durationMin\": 181, \"certification\": \"UA\", \"releaseDate\": \"2024-06-27\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('movieId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update the movie",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/movies/{{movieId}}",
+            "description": "Existing shows keep their times; only new shows use the new duration.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Kalki 2898 AD {{runId}}\", \"durationMin\": 176, \"certification\": \"UA\", \"releaseDate\": \"2024-06-27\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Movie details (customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/movies/{{movieId}}",
+            "description": "Title, duration, certification and release date."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Pricing and refund policies (admin)",
+      "description": "What a seat costs: the show's category price, then day-of-week rules, then a coupon discount, then a convenience\nfee (₹20 a seat) and 18% GST on the ticket and on the fee. What comes back on cancellation is set by the refund\npolicy the booking was sold under.",
+      "item": [
+        {
+          "name": "All pricing rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pricing-rules",
+            "description": "Includes the seeded global `Weekend +20%` rule."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a pricing rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pricing-rules",
+            "description": "A day-of-week surcharge. `scopeType` is GLOBAL, CITY or THEATER (with `scopeId`); when several match, the most specific wins. `daysOfWeek` uses 1 = Monday … 7 = Sunday. `adjustmentType` PERCENT adds a percentage of the tier price, FLAT adds paise per seat; `adjustmentValue` is always positive. `validFrom` / `validTo` (dates, optional) limit when it applies.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Friday nights {{runId}}\", \"scopeType\": \"THEATER\", \"scopeId\": {{theaterId}}, \"daysOfWeek\": [5], \"adjustmentType\": \"FLAT\", \"adjustmentValue\": 5000}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('ruleId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pause the rule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pricing-rules/{{ruleId}}",
+            "description": "`active: false` keeps the rule but stops applying it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Friday nights {{runId}}\", \"scopeType\": \"THEATER\", \"scopeId\": {{theaterId}}, \"daysOfWeek\": [5], \"adjustmentType\": \"FLAT\", \"adjustmentValue\": 5000, \"active\": false}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the rule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pricing-rules/{{ruleId}}",
+            "description": "Holds already priced keep their price."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/coupons",
+            "description": "`discountType` FLAT (paise) or PERCENT (with an optional `maxDiscountPaise`). `minOrderPaise` is checked against the order before the discount. `maxUses` caps total uses (empty = unlimited) and `perUserLimit` uses per customer. `scopes` limits where it works (CITY, THEATER, MOVIE or seat CATEGORY); empty means everywhere. Codes are 3–30 letters and digits and can't change later.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"{{couponCode}}\", \"discountType\": \"FLAT\", \"discountValue\": 5000, \"minOrderPaise\": 30000, \"validFrom\": \"{{validFrom}}\", \"validTo\": \"{{validTo}}\", \"maxUses\": 1000, \"perUserLimit\": 1, \"scopes\": [{\"scopeType\": \"CITY\", \"scopeId\": {{cityId}}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('couponCode', 'FIRST50' + pm.collectionVariables.get('runId'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('couponId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "All coupons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/coupons",
+            "description": "Every coupon, newest first, with `usedCount`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change the coupon's terms",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/coupons/{{couponId}}",
+            "description": "Same body as create, without `code`. `maxUses` can't go below the uses already made.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"discountType\": \"FLAT\", \"discountValue\": 5000, \"minOrderPaise\": 30000, \"validFrom\": \"{{validFrom}}\", \"validTo\": \"{{validTo}}\", \"maxUses\": 500, \"perUserLimit\": 1, \"scopes\": [{\"scopeType\": \"CITY\", \"scopeId\": {{cityId}}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "All refund policies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/refund-policies",
+            "description": "`Standard` is the default out of the box: 100% of the ticket price 24h+ before the show, 50% from 4h, nothing after; fees kept."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const standard = pm.response.json().find(p => p.name === 'Standard');",
+                  "pm.collectionVariables.set('standardPolicyId', standard.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a refund policy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/refund-policies",
+            "description": "`type` SLAB (percent by hours before the show), FULL (everything back) or NON_REFUNDABLE (the customer can still cancel to free the seats, but gets nothing). Slab percentages can't grow as the show gets closer. `refundFees` (SLAB only) also returns the convenience fee.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Premiere {{runId}}\", \"type\": \"SLAB\", \"refundFees\": true, \"slabs\": [{\"minHoursBefore\": 48, \"percent\": 100}, {\"minHoursBefore\": 6, \"percent\": 50}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('policyId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One refund policy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/refund-policies/{{policyId}}",
+            "description": "A policy with its slabs, most hours first."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('slabs sorted', () => pm.expect(pm.response.json().slabs[0].minHoursBefore).to.eql(48));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update the refund policy",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/refund-policies/{{policyId}}",
+            "description": "Only affects bookings confirmed from now on: each booking keeps a copy of the terms it was sold under.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Premiere {{runId}}\", \"type\": \"SLAB\", \"refundFees\": true, \"slabs\": [{\"minHoursBefore\": 48, \"percent\": 100}, {\"minHoursBefore\": 12, \"percent\": 75}, {\"minHoursBefore\": 6, \"percent\": 50}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Make it the default",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/refund-policies/{{policyId}}/make-default",
+            "description": "The default applies to shows that don't name their own policy."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('now the default', () => pm.expect(pm.response.json().isDefault).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Make Standard the default again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/refund-policies/{{standardPolicyId}}/make-default",
+            "description": "Puts things back the way they were."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Shows (admin)",
+      "description": "A show is a movie on a screen at a time. It's created SCHEDULED, opened for sale, and may be cancelled. Creating one\ncopies the screen's active layout into per-show seats and the theater's prices into per-show prices.",
+      "item": [
+        {
+          "name": "Schedule a show",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows",
+            "description": "`startTime` carries its offset. `showDate` (optional) is the listing date; shows before 03:00 are listed under the previous day by default. `priceOverrides` (optional) replaces the theater's price for some categories. `refundPolicyId` (optional) picks this show's refund policy; otherwise the default applies.\n\nThe screen is taken from start to end plus a 20-minute cleaning buffer.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"movieId\": {{movieId}}, \"screenId\": {{screenId}}, \"startTime\": \"{{showStart}}\", \"language\": \"HI\", \"format\": \"2D\", \"priceOverrides\": {\"PREMIUM\": 32000}, \"refundPolicyId\": {{policyId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('showId', pm.response.json().id);",
+                  "pm.test('SCHEDULED', () => pm.expect(pm.response.json().status).to.eql('SCHEDULED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Overlapping show → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows",
+            "description": "A database exclusion constraint keeps two shows from overlapping on one screen, even when two admins try at the same moment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"movieId\": {{movieId}}, \"screenId\": {{screenId}}, \"startTime\": \"{{overlappingStart}}\", \"language\": \"HI\", \"format\": \"2D\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code SHOW_OVERLAP', () => pm.expect(pm.response.json().code).to.eql('SHOW_OVERLAP'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change prices for this show only",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows/{{showId}}/prices",
+            "description": "Paise by category code. Holds already made keep the price they were quoted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"prices\": {\"REGULAR\": 28000}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Open it for sale",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows/{{showId}}/open",
+            "description": "Only OPEN shows are listed to customers and can be booked, until 10 minutes before the start."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('OPEN', () => pm.expect(pm.response.json().status).to.eql('OPEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A theater's shows for a date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows?theaterId={{theaterId}}&date={{showDate}}",
+            "description": "The admin schedule view."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Browse (customer)",
+      "description": "The customer's path to a seat: city → movie → date → theater and time → seat map. Listings are cached in Redis\nfor a minute; the seat map and seats-left counts are always live.",
+      "item": [
+        {
+          "name": "Movies showing in the city",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/cities/{{cityId}}/movies",
+            "description": "Movies with at least one open show in the next 7 days."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Date strip for a movie",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/movies/{{movieId}}/dates?cityId={{cityId}}",
+            "description": "The dates in the next 7 days on which the movie has an open show in the city."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Theaters and showtimes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/movies/{{movieId}}/shows?cityId={{cityId}}&date={{showDate}}",
+            "description": "Theaters showing the movie on that date, each with its showtimes, lowest price, seats left and an availability badge (AVAILABLE, FILLING_FAST, SOLD_OUT)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Showtimes filtered",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/movies/{{movieId}}/shows?cityId={{cityId}}&date={{showDate}}&slot=EVENING,NIGHT&language=HI&format=2D",
+            "description": "`slot` is any of MORNING, AFTERNOON, EVENING, NIGHT (combined with OR); `language` and `format` narrow further."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seat map",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/shows/{{showId}}/seats",
+            "description": "Every seat with its label, grid position, category, type and live status: AVAILABLE, HELD, BOOKED or BLOCKED. Category prices here include the day's adjustment but not fees or GST."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const seats = pm.response.json().seats;",
+                  "const id = label => seats.find(s => s.label === label).seatId;",
+                  "pm.test('A5 is blocked by the layout', () => pm.expect(seats.find(s => s.label === 'A5').status).to.eql('BLOCKED'));",
+                  "for (const label of ['A1', 'A2', 'A3', 'A4', 'A6', 'B9', 'B10']) {",
+                  "    pm.collectionVariables.set('seat' + label, id(label));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Book and pay (customer)",
+      "description": "A hold claims seats for 8 minutes at a frozen price. Paying confirms it; a declined payment gives the seats back;\na slow payment answers 202 and finishes in the background.\n\n`POST` requests that change money or seats take an `Idempotency-Key` header (a UUID the client makes per action).\nSending the same key again returns the first answer instead of doing the work twice.",
+      "item": [
+        {
+          "name": "Hold seats",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{holdKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings",
+            "description": "Claims every requested seat or none of them (up to 10). The response has the price per seat and in total, and `holdExpiresAt` for the countdown. `couponCode` is optional.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"showId\": {{showId}}, \"seatIds\": [{{seatA1}}, {{seatA2}}], \"couponCode\": \"{{couponCode}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('holdKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('bookingId', pm.response.json().bookingId);",
+                  "",
+                  "pm.test('HELD with the coupon', () => {",
+                  "    pm.expect(pm.response.json().status).to.eql('HELD');",
+                  "    pm.expect(pm.response.json().price.discountPaise).to.eql(5000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry with the same key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{holdKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings",
+            "description": "Same `Idempotency-Key`, same body: the first answer is replayed and no second booking is made. The same key with a different body is `409 IDEMPOTENCY_KEY_REUSED`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"showId\": {{showId}}, \"seatIds\": [{{seatA1}}, {{seatA2}}], \"couponCode\": \"{{couponCode}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('same booking', () => pm.expect(pm.response.json().bookingId).to.eql(pm.collectionVariables.get('bookingId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Someone else wants the same seat → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{raviId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings",
+            "description": "Every seat is sold exactly once, however many people click at the same moment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"showId\": {{showId}}, \"seatIds\": [{{seatA2}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code SEATS_UNAVAILABLE', () => pm.expect(pm.response.json().code).to.eql('SEATS_UNAVAILABLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A second hold on the same show → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings",
+            "description": "One live hold per customer and show; finish or release the first.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"showId\": {{showId}}, \"seatIds\": [{{seatA6}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code ACTIVE_HOLD_EXISTS', () => pm.expect(pm.response.json().code).to.eql('ACTIVE_HOLD_EXISTS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove the coupon",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/coupon",
+            "description": "Re-prices the hold without a discount and gives the coupon use back. Seats and expiry don't change."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no coupon', () => pm.expect(pm.response.json().coupon).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Apply a coupon",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/coupon",
+            "description": "Checks the coupon (validity, scope, minimum order, limits) and re-prices the hold. An unusable coupon is `422 COUPON_INVALID` with the reason.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"{{couponCode}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('coupon applied', () => pm.expect(pm.response.json().coupon).to.eql(pm.collectionVariables.get('couponCode')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The booking",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}",
+            "description": "Details of one of your bookings. Someone else's booking is `404`, never `403`, so ids don't leak."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pay by UPI",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/payments",
+            "description": "Pays for the hold. `details.type` is CARD, UPI, NET_BANKING or WALLET. The gateway is simulated: `simulate` is SUCCESS (default), FAILURE or DELAYED.\n\n200 with `paymentStatus` SUCCESS → the booking is CONFIRMED, the seats BOOKED and a confirmation email sent. 200 with FAILED → the booking is FAILED and the seats free again. 202 PENDING → see the delayed example below. Starting to pay keeps the seats at least 5 more minutes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"details\": {\"type\": \"UPI\", \"vpa\": \"asha@okbank\"}, \"simulate\": \"SUCCESS\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('confirmed', () => {",
+                  "    pm.expect(pm.response.json().paymentStatus).to.eql('SUCCESS');",
+                  "    pm.expect(pm.response.json().booking.status).to.eql('CONFIRMED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pay again → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/payments",
+            "description": "A confirmed booking can't be paid twice (a retry with the *same* key would replay the first answer instead).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"details\": {\"type\": \"UPI\", \"vpa\": \"asha@okbank\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code INVALID_STATE', () => pm.expect(pm.response.json().code).to.eql('INVALID_STATE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Release a hold (Ravi)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{raviId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{ravisBooking}}/release",
+            "description": "Letting a hold go frees its seats and coupon at once."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/api/v1/bookings', method: 'POST',",
+                  "    header: {'Content-Type': 'application/json', 'X-User-Id': pm.collectionVariables.get('raviId'),",
+                  "             'X-User-Role': 'CUSTOMER', 'Idempotency-Key': pm.variables.replaceIn('{{$guid}}')},",
+                  "    body: {mode: 'raw', raw: JSON.stringify({showId: Number(pm.collectionVariables.get('showId')),",
+                  "                                            seatIds: [Number(pm.collectionVariables.get('seatA3'))]})}",
+                  "}, (err, res) => pm.collectionVariables.set('ravisBooking', res.json().bookingId));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('RELEASED', () => pm.expect(pm.response.json().status).to.eql('RELEASED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A declined card (Meera)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{meeraId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{meerasBooking}}/payments",
+            "description": "`simulate: FAILURE`: a normal 200 with `paymentStatus: FAILED`; the booking is FAILED and the seats go straight back. Card numbers must pass the Luhn check (4242 4242 4242 4242 does).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"details\": {\"type\": \"CARD\", \"number\": \"4242 4242 4242 4242\", \"expiryMonth\": 12, \"expiryYear\": 2030, \"cvv\": \"123\", \"holderName\": \"Meera\"}, \"simulate\": \"FAILURE\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));",
+                  "",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/api/v1/bookings', method: 'POST',",
+                  "    header: {'Content-Type': 'application/json', 'X-User-Id': pm.collectionVariables.get('meeraId'),",
+                  "             'X-User-Role': 'CUSTOMER', 'Idempotency-Key': pm.variables.replaceIn('{{$guid}}')},",
+                  "    body: {mode: 'raw', raw: JSON.stringify({showId: Number(pm.collectionVariables.get('showId')),",
+                  "                                            seatIds: [Number(pm.collectionVariables.get('seatA3'))]})}",
+                  "}, (err, res) => pm.collectionVariables.set('meerasBooking', res.json().bookingId));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('declined, booking failed', () => {",
+                  "    pm.expect(pm.response.json().paymentStatus).to.eql('FAILED');",
+                  "    pm.expect(pm.response.json().booking.status).to.eql('FAILED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A slow gateway (Kabir) → 202",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{kabirId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{kabirsBooking}}/payments",
+            "description": "`simulate: DELAYED`: `202 Accepted` with `paymentStatus: PENDING`; the booking stays PAYMENT_PENDING and the outcome arrives about 15 seconds later in the background. Poll `GET /bookings/{id}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"details\": {\"type\": \"WALLET\", \"provider\": \"PAYTM\"}, \"simulate\": \"DELAYED\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));",
+                  "",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/api/v1/bookings', method: 'POST',",
+                  "    header: {'Content-Type': 'application/json', 'X-User-Id': pm.collectionVariables.get('kabirId'),",
+                  "             'X-User-Role': 'CUSTOMER', 'Idempotency-Key': pm.variables.replaceIn('{{$guid}}')},",
+                  "    body: {mode: 'raw', raw: JSON.stringify({showId: Number(pm.collectionVariables.get('showId')),",
+                  "                                            seatIds: [Number(pm.collectionVariables.get('seatA4'))]})}",
+                  "}, (err, res) => pm.collectionVariables.set('kabirsBooking', res.json().bookingId));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 202', () => pm.response.to.have.status(202));",
+                  "pm.test('pending', () => pm.expect(pm.response.json().booking.status).to.eql('PAYMENT_PENDING'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Net banking (Zoya)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{zoyaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{zoyasBooking}}/payments",
+            "description": "`bankCode` is one of the configured banks (HDFC, ICICI, SBI, AXIS, KOTAK).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"details\": {\"type\": \"NET_BANKING\", \"bankCode\": \"HDFC\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));",
+                  "",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/api/v1/bookings', method: 'POST',",
+                  "    header: {'Content-Type': 'application/json', 'X-User-Id': pm.collectionVariables.get('zoyaId'),",
+                  "             'X-User-Role': 'CUSTOMER', 'Idempotency-Key': pm.variables.replaceIn('{{$guid}}')},",
+                  "    body: {mode: 'raw', raw: JSON.stringify({showId: Number(pm.collectionVariables.get('showId')),",
+                  "                                            seatIds: [Number(pm.collectionVariables.get('seatA3'))]})}",
+                  "}, (err, res) => pm.collectionVariables.set('zoyasBooking', res.json().bookingId));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('confirmed', () => pm.expect(pm.response.json().booking.status).to.eql('CONFIRMED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Cancel and refund (customer)",
+      "description": "A confirmed booking can be cancelled in full or seat by seat until 30 minutes before the show. The refund follows\nthe policy the booking was sold under; the preview and the real cancellation always agree to the paisa.",
+      "item": [
+        {
+          "name": "Refund preview for one seat",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/refund-quote?seatIds={{seatA2}}",
+            "description": "What cancelling these seats now would refund; changes nothing. Leave `seatIds` out for every active seat. Inside the last 30 minutes it's `422 CANCELLATION_CLOSED`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('quotedRefund', pm.response.json().refundPaise);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel that seat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/cancellations",
+            "description": "Cancels the seats (all active ones when `seatIds` is left out), frees them for sale and starts the refund. The booking stays CONFIRMED while seats remain, and the coupon is only given back once none do. `refundId` is null when nothing is refunded.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"seatIds\": [{{seatA2}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('refund matches the preview', () => pm.expect(pm.response.json().refundPaise)",
+                  "    .to.eql(Number(pm.collectionVariables.get('quotedRefund'))));",
+                  "pm.test('booking still confirmed', () => pm.expect(pm.response.json().booking.status).to.eql('CONFIRMED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel the same seat again → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/cancellations",
+            "description": "Each seat can be cancelled once.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"seatIds\": [{{seatA2}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idemKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code INVALID_STATE', () => pm.expect(pm.response.json().code).to.eql('INVALID_STATE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Booking history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings?view=UPCOMING&page=0&size=10",
+            "description": "`view` is UPCOMING (confirmed, show ahead), PAST (confirmed, show started) or CANCELLED. Pages start at 0; `size` is 1–50. Each item has the movie, theater, time, seats still booked and cancelled seats."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('the booking is upcoming', () => pm.expect(pm.response.json().items.map(i => i.bookingId)).to.include(pm.collectionVariables.get('bookingId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Booking details with refunds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}",
+            "description": "Seats with their status, every cancellation, and the payment with each refund's status (INITIATED → COMPLETED)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(() => {}, 1500);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('one cancellation', () => pm.expect(body.cancellations.length).to.eql(1));",
+                  "pm.test('refund recorded', () => pm.expect(body.payment.refunds[0].reason).to.eql('CUSTOMER'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. An admin cancels the show",
+      "description": "Cancelling a show releases every hold and refunds every confirmed booking in full, fees included, in the background.\nA payment still pending when it happens is refunded as soon as it lands.",
+      "item": [
+        {
+          "name": "Block two seats",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows/{{showId}}/seats/block",
+            "description": "Takes seats off sale for this show (a broken seat). The response lists seats it couldn't block (already sold, held or blocked).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"seatIds\": [{{seatB9}}, {{seatB10}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('both blocked', () => pm.expect(pm.response.json().unchangedSeatIds).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unblock them",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows/{{showId}}/seats/unblock",
+            "description": "Puts blocked seats back on sale.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"seatIds\": [{{seatB9}}, {{seatB10}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel the show",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/shows/{{showId}}/cancel",
+            "description": "The show disappears from browse at once; releases and refunds follow within seconds."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asha's booking: cancelled, refunded",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}",
+            "description": "The remaining seat is cancelled with reason SHOW_CANCELLED and a 100% refund."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(() => {}, 2500);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('CANCELLED', () => pm.expect(body.status).to.eql('CANCELLED'));",
+                  "pm.test('show-cancelled refund', () => pm.expect(body.payment.refunds.map(r => r.reason)).to.include('SHOW_CANCELLED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kabir's late payment: refunded",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{kabirId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings/{{kabirsBooking}}",
+            "description": "If Kabir's delayed payment landed after the show was cancelled (the usual case in a collection run), the booking is EXPIRED and the money refunded automatically with reason LATE_PAYMENT. If it landed first, the show cancellation refunded it (CANCELLED, SHOW_CANCELLED). Either way nobody keeps a paid seat on a cancelled show. This request waits ~16 seconds first."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(() => {}, 16000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const body = pm.response.json();",
+                  "const reasons = body.payment.refunds.map(r => r.reason);",
+                  "pm.test('refunded in full', () => pm.expect(",
+                  "    (body.status === 'EXPIRED' && reasons.includes('LATE_PAYMENT'))",
+                  "    || (body.status === 'CANCELLED' && reasons.includes('SHOW_CANCELLED'))).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asha's cancelled bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{ashaId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "CUSTOMER"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "Asha Rao"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "asha@example.com"
+              },
+              {
+                "key": "X-User-Phone",
+                "value": "+919800000001"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/bookings?view=CANCELLED",
+            "description": "The CANCELLED view of the history."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('listed', () => pm.expect(pm.response.json().items.map(i => i.bookingId)).to.include(pm.collectionVariables.get('bookingId')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Retire things (admin)",
+      "description": "Deactivating hides a coupon, movie, screen, theater or city from customers and from new shows. History stays.",
+      "item": [
+        {
+          "name": "Deactivate the coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/coupons/{{couponId}}/deactivate",
+            "description": "No new holds can use it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate the movie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/movies/{{movieId}}/deactivate",
+            "description": "No new shows can be scheduled for it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate the screen",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/screens/{{screenId}}/deactivate",
+            "description": "No new shows on this screen."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate the theater",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/theaters/{{theaterId}}/deactivate",
+            "description": "Hides the theater and its screens."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate the city",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{adminId}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "ADMIN"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/cities/{{cityId}}/deactivate",
+            "description": "Removes the city from the city picker."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}

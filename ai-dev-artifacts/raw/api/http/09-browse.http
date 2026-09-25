@@ -1,0 +1,26 @@
+# Customer browse flow. Needs {{cityId}} and {{movieId}}, plus an OPEN show (shows.http).
+
+### Movies now showing in the city
+GET {{baseUrl}}/api/v1/cities/{{cityId}}/movies
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+
+### Date strip for a movie
+GET {{baseUrl}}/api/v1/movies/{{movieId}}/dates?cityId={{cityId}}
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+
+### Theaters and showtimes for a date
+GET {{baseUrl}}/api/v1/movies/{{movieId}}/shows?cityId={{cityId}}&date=2026-10-03
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+
+### Same, evening and night only, Hindi 2D
+GET {{baseUrl}}/api/v1/movies/{{movieId}}/shows?cityId={{cityId}}&date=2026-10-03&slot=EVENING,NIGHT&language=HI&format=2D
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
+
+### Seat map for a show (needs {{showId}} of an OPEN show)
+GET {{baseUrl}}/api/v1/shows/{{showId}}/seats
+X-User-Id: 5b1e3f60-0000-4000-8000-00000000c001
+X-User-Role: CUSTOMER
