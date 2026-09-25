@@ -2,6 +2,8 @@ package com.sumit.movieticketbookingsystem.pricing.internal;
 
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.persistence.ConstraintViolations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,8 @@ import java.util.Map;
 
 @Service
 public class TheaterPriceService {
+
+    private static final Logger log = LoggerFactory.getLogger(TheaterPriceService.class);
 
     private final PriceRepository prices;
     private final SeatCategories categories;
@@ -31,6 +35,7 @@ public class TheaterPriceService {
             }
             throw e;
         }
+        log.info("Theater {} prices set: {}", theaterId, pricesByCode);
         return prices(theaterId);
     }
 

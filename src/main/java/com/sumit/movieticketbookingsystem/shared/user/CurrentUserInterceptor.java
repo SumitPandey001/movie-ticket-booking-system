@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.shared.user;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.MDC;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.Locale;
@@ -9,7 +10,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Builds the CurrentUser from the headers the gateway sets and stores it on the request.
+ * Builds the CurrentUser from the headers the gateway sets and stores it on the request. The user id also goes
+ * into the log context, so every line of the request says who made it; RequestIdFilter clears it afterwards.
  * The gateway has already authenticated the caller, so the headers are trusted as-is.
  */
 class CurrentUserInterceptor implements HandlerInterceptor {
@@ -18,6 +20,7 @@ class CurrentUserInterceptor implements HandlerInterceptor {
 
     private static final String USER_ID = "X-User-Id";
     private static final String USER_ROLE = "X-User-Role";
+    private static final String MDC_KEY = "userId";
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -28,6 +31,7 @@ class CurrentUserInterceptor implements HandlerInterceptor {
                 request.getHeader("X-User-Name"),
                 request.getHeader("X-User-Email"),
                 request.getHeader("X-User-Phone")));
+        MDC.put(MDC_KEY, id.toString());
         return true;
     }
 

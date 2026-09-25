@@ -11,6 +11,8 @@ import com.sumit.movieticketbookingsystem.catalog.internal.persistence.TheaterRe
 import com.sumit.movieticketbookingsystem.shared.error.InvalidStateException;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class LayoutAdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(LayoutAdminService.class);
 
     private final SeatLayoutRepository layouts;
     private final SeatCategoryRepository categories;
@@ -69,6 +73,7 @@ public class LayoutAdminService {
             layouts.flush();
         });
         layout.activate();
+        log.info("Layout {} is now active on screen {}", layoutId, layout.getScreenId());
         return layout;
     }
 

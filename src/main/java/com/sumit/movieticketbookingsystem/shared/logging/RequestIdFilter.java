@@ -39,7 +39,7 @@ class RequestIdFilter extends OncePerRequestFilter {
         try {
             chain.doFilter(request, response);
         } finally {
-            MDC.remove(MDC_KEY);
+            MDC.clear();   // the user id CurrentUserInterceptor added ends with the request too
         }
     }
 }

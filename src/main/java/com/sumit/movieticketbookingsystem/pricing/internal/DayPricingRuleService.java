@@ -4,6 +4,8 @@ import com.sumit.movieticketbookingsystem.catalog.CatalogApi;
 import com.sumit.movieticketbookingsystem.pricing.internal.DayPricingRule.Definition;
 import com.sumit.movieticketbookingsystem.shared.error.NotFoundException;
 import com.sumit.movieticketbookingsystem.shared.error.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,8 @@ import java.util.Set;
 
 @Service
 public class DayPricingRuleService {
+
+    private static final Logger log = LoggerFactory.getLogger(DayPricingRuleService.class);
 
     private static final int MAX_PERCENT = 100;
 
@@ -31,7 +35,9 @@ public class DayPricingRuleService {
     @Transactional
     public DayPricingRule create(Definition definition) {
         validate(definition);
-        return rules.save(new DayPricingRule(definition));
+        DayPricingRule rule = rules.save(new DayPricingRule(definition));
+        log.info("Pricing rule {} created: {}", rule.getId(), definition);
+        return rule;
     }
 
     @Transactional
@@ -39,12 +45,14 @@ public class DayPricingRuleService {
         validate(definition);
         DayPricingRule rule = find(id);
         rule.update(definition);
+        log.info("Pricing rule {} updated: {}", id, definition);
         return rule;
     }
 
     @Transactional
     public void delete(long id) {
         rules.delete(find(id));
+        log.info("Pricing rule {} deleted", id);
     }
 
     private void validate(Definition definition) {

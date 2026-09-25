@@ -15,6 +15,8 @@ import com.sumit.movieticketbookingsystem.show.ShowCancelled;
 import com.sumit.movieticketbookingsystem.show.internal.domain.Show;
 import com.sumit.movieticketbookingsystem.show.internal.persistence.ShowRepository;
 import com.sumit.movieticketbookingsystem.show.internal.query.ShowListingChanged;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ShowAdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShowAdminService.class);
 
     private final ShowRepository shows;
     private final CatalogApi catalog;
@@ -112,6 +116,7 @@ public class ShowAdminService {
         Show show = find(showId);
         show.updatePriceFrom(pricing.overrideShowPrices(ShowPricings.of(show), prices));
         listingChanged(show);
+        log.info("Show {} prices overridden: {}", showId, prices);
         return show;
     }
 
@@ -125,6 +130,7 @@ public class ShowAdminService {
         Show show = find(showId);
         show.open();
         listingChanged(show);
+        log.info("Show {} opened for booking", showId);
         return show;
     }
 
@@ -134,6 +140,7 @@ public class ShowAdminService {
         show.cancel();
         listingChanged(show);
         events.publishEvent(new ShowCancelled(show.getId(), Instant.now(clock)));
+        log.info("Show {} cancelled", showId);
         return show;
     }
 
