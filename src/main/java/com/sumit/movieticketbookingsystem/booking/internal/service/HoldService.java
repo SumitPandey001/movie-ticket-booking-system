@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,8 +44,6 @@ import java.util.stream.Collectors;
 public class HoldService {
 
     private static final Logger log = LoggerFactory.getLogger(HoldService.class);
-
-    private static final Set<BookingStatus> LIVE = EnumSet.of(BookingStatus.HELD, BookingStatus.PAYMENT_PENDING);
 
     private final BookingRepository bookings;
     private final ShowApi shows;
@@ -146,7 +143,7 @@ public class HoldService {
      * booking_one_active_hold while the old one still looks live.
      */
     private void replaceLapsedHold(UUID userId, long showId, Instant now) {
-        Optional<Booking> live = bookings.findByUserIdAndShowIdAndStatusIn(userId, showId, LIVE);
+        Optional<Booking> live = bookings.findByUserIdAndShowIdAndStatusIn(userId, showId, BookingStatus.HOLDING_SEATS);
         if (live.isEmpty()) {
             return;
         }

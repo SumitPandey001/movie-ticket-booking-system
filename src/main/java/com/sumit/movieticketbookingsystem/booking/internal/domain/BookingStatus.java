@@ -2,6 +2,7 @@ package com.sumit.movieticketbookingsystem.booking.internal.domain;
 
 import com.sumit.movieticketbookingsystem.shared.error.IllegalTransitionException;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -40,13 +41,16 @@ public enum BookingStatus {
     EXPIRED,
     FAILED;
 
+    /** HELD and PAYMENT_PENDING bookings own their seats in inventory. */
+    public static final Set<BookingStatus> HOLDING_SEATS =
+            Collections.unmodifiableSet(EnumSet.of(HELD, PAYMENT_PENDING));
+
     Set<BookingStatus> next() {
         return EnumSet.noneOf(BookingStatus.class);
     }
 
-    /** HELD and PAYMENT_PENDING bookings own their seats in inventory. */
     public boolean holdsSeats() {
-        return this == HELD || this == PAYMENT_PENDING;
+        return HOLDING_SEATS.contains(this);
     }
 
     BookingStatus transitionTo(BookingStatus target) {
