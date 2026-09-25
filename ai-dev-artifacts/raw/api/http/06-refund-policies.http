@@ -1,0 +1,18 @@
+### List refund policies ("Standard" is the default out of the box)
+GET {{baseUrl}}/api/v1/admin/refund-policies
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### Create a slab policy: 100% up to 48h before, 50% up to 6h, fees refunded too
+POST {{baseUrl}}/api/v1/admin/refund-policies
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Premiere", "type": "SLAB", "refundFees": true,
+ "slabs": [{"minHoursBefore": 48, "percent": 100}, {"minHoursBefore": 6, "percent": 50}]}
+
+### Make it the default for shows without their own policy
+POST {{baseUrl}}/api/v1/admin/refund-policies/{{policyId}}/make-default
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN

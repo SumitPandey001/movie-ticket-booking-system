@@ -1,0 +1,31 @@
+### Create a coupon (₹50 off orders of ₹300+, Bengaluru only)
+POST {{baseUrl}}/api/v1/admin/coupons
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"code": "FIRST50", "discountType": "FLAT", "discountValue": 5000, "minOrderPaise": 30000,
+ "validFrom": "2026-10-01T00:00:00+05:30", "validTo": "2026-10-31T23:59:59+05:30",
+ "maxUses": 1000, "perUserLimit": 1, "scopes": [{"scopeType": "CITY", "scopeId": {{cityId}}}]}
+
+> {% client.global.set("couponId", response.body.id); %}
+
+### All coupons, with how often each has been used
+GET {{baseUrl}}/api/v1/admin/coupons
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### Change its terms (the code stays FIRST50)
+PUT {{baseUrl}}/api/v1/admin/coupons/{{couponId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"discountType": "PERCENT", "discountValue": 20, "maxDiscountPaise": 10000, "minOrderPaise": 30000,
+ "validFrom": "2026-10-01T00:00:00+05:30", "validTo": "2026-11-30T23:59:59+05:30",
+ "maxUses": 1000, "perUserLimit": 1, "scopes": []}
+
+### Deactivate it
+POST {{baseUrl}}/api/v1/admin/coupons/{{couponId}}/deactivate
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN

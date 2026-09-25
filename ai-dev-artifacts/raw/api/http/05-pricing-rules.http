@@ -1,0 +1,29 @@
+### All pricing rules (the seeded "Weekend +20%" is always there)
+GET {{baseUrl}}/api/v1/admin/pricing-rules
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### A theater-specific Friday-night surcharge (beats city and global rules)
+POST {{baseUrl}}/api/v1/admin/pricing-rules
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Friday nights", "scopeType": "THEATER", "scopeId": {{theaterId}}, "daysOfWeek": [5],
+ "adjustmentType": "FLAT", "adjustmentValue": 5000}
+
+> {% client.global.set("ruleId", response.body.id); %}
+
+### Pause it
+PUT {{baseUrl}}/api/v1/admin/pricing-rules/{{ruleId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"name": "Friday nights", "scopeType": "THEATER", "scopeId": {{theaterId}}, "daysOfWeek": [5],
+ "adjustmentType": "FLAT", "adjustmentValue": 5000, "active": false}
+
+### Delete it
+DELETE {{baseUrl}}/api/v1/admin/pricing-rules/{{ruleId}}
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN

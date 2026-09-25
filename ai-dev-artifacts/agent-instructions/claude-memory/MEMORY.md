@@ -1,0 +1,2 @@
+- [Dev workflow](dev-workflow.md) — no commits by me, branch per step, ask to commit at checkpoints, incremental style code, quality checklist
+- [Setup decisions](project-setup-decisions.md) — Java 21, base package, small branches; DB creds via env vars, local smoke-run ports

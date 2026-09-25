@@ -1,0 +1,38 @@
+# Run theaters.http first; it sets {{screenId}}.
+
+### Draft a layout for the screen
+POST {{baseUrl}}/api/v1/admin/screens/{{screenId}}/layouts
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"rows": [
+   {"label": "A", "segments": [{"from": 1, "to": 8, "category": "REGULAR"}, {"aisle": 2},
+                               {"from": 9, "to": 16, "category": "REGULAR"}]},
+   {"label": "B", "segments": [{"from": 1, "to": 8, "category": "PREMIUM"}, {"aisle": 2},
+                               {"from": 9, "to": 16, "category": "PREMIUM"}]},
+   {"label": "J", "segments": [{"aisle": 2}, {"from": 1, "to": 8, "category": "RECLINER"}]}],
+ "blocked": ["A5"], "wheelchair": ["J7", "J8"]}
+
+> {% client.global.set("layoutId", response.body.id); %}
+
+### Edit the draft
+PUT {{baseUrl}}/api/v1/admin/layouts/{{layoutId}}
+Content-Type: application/json
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+{"rows": [
+   {"label": "A", "segments": [{"from": 1, "to": 10, "category": "REGULAR"}]},
+   {"label": "B", "segments": [{"from": 1, "to": 10, "category": "PREMIUM"}]}],
+ "blocked": ["A5"]}
+
+### Activate it
+POST {{baseUrl}}/api/v1/admin/layouts/{{layoutId}}/activate
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
+
+### All layout versions for the screen
+GET {{baseUrl}}/api/v1/admin/screens/{{screenId}}/layouts
+X-User-Id: 0f8d7c1a-0000-4000-8000-00000000a001
+X-User-Role: ADMIN
